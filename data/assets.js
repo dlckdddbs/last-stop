@@ -22,7 +22,7 @@ LS.ASSETS = {
     yoon_jaeha: 'images/portraits/yoon_jaeha.svg',
     park_seoyun: 'images/portraits/park_seoyun.svg',
     han_jungsu: 'images/portraits/han_jungsu.svg',
-    oh_sujin: 'images/portraits/oh_sujin.svg',
+    lee_sua: 'images/portraits/lee_sua.svg',
     radio: 'images/portraits/radio.svg'
   },
   icons: {

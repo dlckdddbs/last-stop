@@ -105,7 +105,7 @@ LS.CONFIG = {
     poison: [{ min: 70, chance: 0 }, { min: 50, chance: 0.15 }, { min: 25, chance: 0.30 }, { min: 0, chance: 0.70 }],
     poisonHp: -10, poisonHours: 12
   },
-  medic: { poisonHoursFactor: 0.5 },   // 임시값: 간호사가 일행에 있으면 식중독 기간 절반
+  medic: { poisonHoursFactor: 0.5 },   // 임시값: 간호사(이수아)가 일행에 있으면 식중독 기간 절반. 치료 시스템이 들어오기 전까지
 
   // 수면·대화 회복 (08~09장)
   sleep: { mentalHours: 6, mentalBonus: 5, hpHours: 8, hpBonus: 5, cooldownHours: 24 },

@@ -87,7 +87,7 @@ LS.SCHEDULE = [
 // hint: 지도 경로 패널에 보이는 단서
 LS.FIRST_COMPANION = {
   bus_garage: { id: 'han_jungsu', short: '경적 소리', hint: '어젯밤 경적이 세 번 울렸던 곳', meet: 'meet_driver', gone: 'gone_driver' },
-  outskirts_gas: { id: 'oh_sujin', short: '붉은 십자가 천', hint: '옥상에 붉은 십자가 천이 걸린 곳', meet: 'meet_nurse', gone: 'gone_nurse' }
+  outskirts_gas: { id: 'lee_sua', short: '붉은 십자가 천', hint: '옥상에 붉은 십자가 천이 걸린 곳', meet: 'meet_nurse', gone: 'gone_nurse' }
 };
 
 Object.assign(LS.EVENTS, {
@@ -124,13 +124,16 @@ Object.assign(LS.EVENTS, {
     screen: 'outside',
     lines: [
       { speaker: 'narration', text: '주유소 편의점 셔터가 반쯤 올라가더니, 구급가방을 멘 여자가 몸을 숙이고 나왔다.' },
-      { speaker: 'oh_sujin', text: '천 보고 오신 거죠? 응급실에서 일했어요. 다친 사람 있으면 봐 드릴게요.' },
-      { speaker: 'oh_sujin', text: '대신 저도 데려가 주세요. 여기 혼자 있기엔 너무 조용해요.' },
-      { speaker: 'yoon_jaeha', text: '공항까지 갑니다. 길이 험할 거예요.' }
+      { speaker: 'lee_sua', text: '천 보고 오신 거죠? 이수아예요. 도심 진료소 간호사였어요.' },
+      { speaker: 'lee_sua', text: '약을 구하러 외곽까지 나왔다가 돌아갈 길이 끊겼어요. 다친 사람 있으면 봐 드릴게요.' },
+      { speaker: 'lee_sua', text: '대신 하나만 약속해 주세요. 누가 물려도, 길에 버리고 가지 않기로요.' },
+      { speaker: 'yoon_jaeha', text: '공항까지 갑니다. 약속할게요.' }
     ],
     observations: [
-      '오수진 · 전직 응급실 간호사 (임시 인물)',
-      '일행의 식중독이 빨리 낫는다 (12시간 → 6시간, 임시값) · 일반 운전 가능',
+      '이수아 · 간호사 (도심 진료소 출신)',
+      '간호사 치료: 의약품 1회분·2시간에 HP +20 (일반 +15) · 치료는 이후 단계',
+      '지금은 일행의 식중독이 빨리 낫는다 (12시간 → 6시간, 임시) · 일반 운전 가능 (임시)',
+      '합류 조건: 감염자를 버리지 않는다',
       '함께 가면 차고지 쪽 사람은 만나지 못한다'
     ],
     opinions: [
@@ -140,9 +143,9 @@ Object.assign(LS.EVENTS, {
       {
         label: '함께 가자',
         result: {
-          lines: [{ speaker: 'oh_sujin', text: '고마워요. 구급가방은 제가 챙길게요.' }]
+          lines: [{ speaker: 'lee_sua', text: '고마워요. 구급가방은 제가 챙길게요.' }]
         },
-        run: (s) => LS.State.addMember(s, 'oh_sujin', '간호사')
+        run: (s) => LS.State.addMember(s, 'lee_sua', '간호사')
       }
     ]
   },

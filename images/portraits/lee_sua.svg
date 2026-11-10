@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <!-- 임시 초상: 오수진 (전직 응급실 간호사, 이름·설정 임시) -->
+  <!-- 임시 초상: 이수아 (간호사, 기획서 v3.3 인물) -->
   <rect width="256" height="256" fill="#24363a"/>
   <path d="M28 256 C34 188 82 164 128 164 C174 164 222 188 228 256 Z" fill="#5d8f8a"/>
   <path d="M104 166 L128 200 L152 166 Z" fill="#3f6b67"/>
@@ -14,5 +14,5 @@
   <ellipse cx="110" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
   <ellipse cx="146" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
   <path d="M114 136 Q128 142 142 136" stroke="#9a6a58" stroke-width="4" fill="none"/>
-  <text x="18" y="38" font-family="Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#9fd3cc">오</text>
+  <text x="18" y="38" font-family="Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#9fd3cc">이</text>
 </svg>
