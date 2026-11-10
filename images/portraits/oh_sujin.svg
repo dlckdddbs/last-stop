@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 임시 초상: 오수진 (전직 응급실 간호사, 이름·설정 임시) -->
+  <rect width="256" height="256" fill="#24363a"/>
+  <path d="M28 256 C34 188 82 164 128 164 C174 164 222 188 228 256 Z" fill="#5d8f8a"/>
+  <path d="M104 166 L128 200 L152 166 Z" fill="#3f6b67"/>
+  <rect x="160" y="196" width="34" height="34" rx="4" fill="#e6e2d6"/>
+  <rect x="173" y="202" width="8" height="22" fill="#b0413e"/>
+  <rect x="166" y="209" width="22" height="8" fill="#b0413e"/>
+  <rect x="112" y="140" width="32" height="30" fill="#d2a689"/>
+  <ellipse cx="128" cy="106" rx="44" ry="50" fill="#dcb294"/>
+  <path d="M82 112 C76 60 104 44 128 44 C154 44 182 60 174 112 C170 88 160 72 128 70 C100 72 88 88 82 112 Z" fill="#2b2420"/>
+  <path d="M84 104 C80 140 88 160 96 168 L92 120 Z" fill="#2b2420"/>
+  <path d="M172 104 C176 140 168 160 160 168 L164 120 Z" fill="#2b2420"/>
+  <ellipse cx="110" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <ellipse cx="146" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <path d="M114 136 Q128 142 142 136" stroke="#9a6a58" stroke-width="4" fill="none"/>
+  <text x="18" y="38" font-family="Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#9fd3cc">오</text>
+</svg>

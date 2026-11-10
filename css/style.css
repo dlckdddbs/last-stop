@@ -103,11 +103,34 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
   overflow-y: auto;
   min-height: 0;
 }
-#log h3 { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
-#log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column-reverse; gap: 6px; }
-#log-list li { font-size: 12px; line-height: 1.45; color: #c6ccd2; border-left: 2px solid var(--line); padding-left: 8px; }
-#log-list li .log-time { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
-#log-list li.important { border-left-color: var(--accent); color: var(--text); }
+#log { padding-top: 0; }
+.log-head {
+  position: sticky; top: 0; z-index: 1; background: var(--panel);
+  display: flex; justify-content: space-between; align-items: center; padding: 10px 0 8px;
+}
+#log h3 { margin: 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+.log-filter { display: flex; gap: 4px; }
+.log-filter button { font-size: 11px; padding: 2px 8px; }
+#log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.log-day {
+  font-size: 11px; font-weight: 700; color: var(--accent); margin-top: 6px;
+  padding-bottom: 3px; border-bottom: 1px solid var(--line);
+}
+.log-item { font-size: 12px; line-height: 1.45; color: #b9c0c7; border-left: 3px solid var(--line); padding: 2px 0 2px 8px; }
+.log-item.important { color: var(--text); background: rgba(255, 255, 255, 0.03); }
+.log-line { display: flex; align-items: center; gap: 6px; margin-bottom: 1px; }
+.log-time { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.log-badge { font-size: 10px; padding: 0 6px; border-radius: 6px; background: #262d35; color: var(--muted); }
+.log-text { font-weight: 600; }
+.log-item:not(.important) .log-text { font-weight: 400; }
+.log-detail { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.log-empty { font-size: 12px; color: var(--muted); }
+.k-ev { border-left-color: #c9744a; } .k-ev .log-badge { background: #3a2418; color: #f0a37a; }
+.k-task { border-left-color: #8a7a4a; } .k-task .log-badge { background: #2f2a18; color: #e3c27a; }
+.k-trv { border-left-color: #4a7a9a; } .k-trv .log-badge { background: #18283a; color: #8fc0e3; }
+.k-meal { border-left-color: #5a8a5a; } .k-meal .log-badge { background: #1d2f1f; color: #9ad3a1; }
+.k-body { border-left-color: #b45555; } .k-body .log-badge { background: #3a1e1e; color: #e39a9a; }
+.k-time .log-badge, .k-sys .log-badge { background: #262d35; color: #a9b3bd; }
 
 /* ---------- 장면 공통 ---------- */
 .scene-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -133,9 +156,69 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 }
 .spot {
   position: absolute; transform: translate(-50%, -50%);
-  font-size: 12px; padding: 5px 10px; border-radius: 14px;
-  background: rgba(10, 12, 16, 0.75); border: 1px dashed #59626c; color: #c6ccd2;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  font-size: 12px; padding: 6px 10px; border-radius: 8px; text-align: left;
+  background: rgba(10, 12, 16, 0.8); border: 1px solid #59626c; color: #e5e8ec;
+  max-width: 220px; z-index: 2;
 }
+.spot b { font-size: 13px; }
+.spot small { font-size: 11px; color: var(--muted); }
+.spot.busy { border-color: var(--accent); }
+.spot-work { font-size: 11px; color: var(--accent); }
+
+/* 장면 아래 행동 버튼 줄 */
+.scene-actions {
+  position: absolute; left: 12px; bottom: 12px;
+  display: flex; gap: 6px; z-index: 3;
+  background: rgba(10, 12, 16, 0.7); padding: 6px; border-radius: 8px;
+}
+.scene-actions button { font-size: 13px; }
+.scene-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+
+/* 알림 */
+#toasts {
+  position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 6px; z-index: 30; width: min(80%, 560px); pointer-events: none;
+}
+.toast {
+  background: rgba(24, 24, 28, 0.94); border: 1px solid #59626c; color: var(--text);
+  padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.5;
+  transition: opacity 0.8s; pointer-events: auto; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+}
+.toast small { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.toast.sticky { background: rgba(32, 24, 12, 0.96); border-color: var(--accent); }
+.toast.fade { opacity: 0; }
+
+/* 지도 (인라인 SVG) */
+.map-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map-svg .map-region { fill: #7f8c84; font-size: 30px; font-family: "Malgun Gothic", sans-serif; }
+.map-svg .edge { stroke-width: 6; stroke-linecap: round; }
+.map-svg .edge.known { stroke: #b8ab8a; }
+.map-svg .edge.unknown { stroke: #6f6a5c; stroke-dasharray: 14 12; }
+.map-svg .edge-label { fill: #a9ada6; font-size: 22px; text-anchor: middle; font-family: "Malgun Gothic", sans-serif; }
+.map-svg .node { cursor: pointer; }
+.map-svg .node circle { fill: #39424c; stroke: #6f7a85; stroke-width: 4; }
+.map-svg .node.visited circle { fill: #4a5a4e; }
+.map-svg .node.adjacent circle { stroke: var(--accent); }
+.map-svg .node.current circle { fill: var(--accent); stroke: #1a1a1a; }
+.map-svg .node.exit circle { fill: #3a3f5a; stroke: #8fa0d8; }
+.map-svg .node text { fill: #e5e8ec; font-size: 24px; text-anchor: middle; font-family: "Malgun Gothic", sans-serif; paint-order: stroke; stroke: #11161b; stroke-width: 6px; }
+.map-svg .node:hover circle { stroke: #fff; }
+.map-svg .bus-marker rect { fill: #d6d1c3; stroke: #1a1a1a; stroke-width: 3; }
+.map-svg .bus-marker text { fill: #1a1a1a; font-size: 18px; font-weight: 700; text-anchor: middle; font-family: "Malgun Gothic", sans-serif; }
+.map-inset {
+  position: absolute; right: 12px; top: 12px; width: 24%;
+  background: rgba(10, 12, 16, 0.8); border: 1px solid var(--line); border-radius: 6px; padding: 4px;
+  font-size: 11px; color: var(--muted);
+}
+.map-inset img { width: 100%; display: block; border-radius: 4px; margin-bottom: 3px; }
+
+/* 이동 정보 */
+#travel-info { position: absolute; left: 14px; top: 14px; width: 46%; z-index: 2; }
+.travel-panel { background: rgba(10, 12, 16, 0.8); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.travel-panel .tp-route { font-weight: 700; margin-bottom: 6px; }
+.travel-panel .tp-row { font-size: 12px; color: #c6ccd2; margin-top: 6px; line-height: 1.5; }
 
 /* 버스 내부 */
 .seat, .facility, .locker {
@@ -149,6 +232,12 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 .seat .chip { width: 100%; height: 100%; border-radius: 10px; overflow: hidden; border: 2px solid #59626c; cursor: pointer; background: #222; }
 .seat .chip img { width: 100%; height: 100%; display: block; }
 .seat .chip:hover { border-color: var(--accent); }
+.seat .chip { position: relative; }
+.seat .chip.away { opacity: 0.45; }
+.chip-tag {
+  position: absolute; right: 2px; bottom: 2px; font-size: 10px; font-weight: 700;
+  background: rgba(10, 12, 16, 0.85); color: var(--accent); padding: 0 4px; border-radius: 4px;
+}
 .facility { width: 13.75%; height: 22.2%; color: #6c7782; }
 .facility .fac-name { font-size: 12px; }
 .locker { width: 7%; height: 9%; font-size: 10px; color: #a8987a; }
@@ -178,16 +267,16 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 .paused .travel-far, .paused .travel-near, .paused .travel-bus { animation-play-state: paused; }
 
 /* ---------- 상세 정보 패널 ---------- */
-#detail {
+#panel {
   position: absolute; right: 12px; top: 12px; bottom: 12px; width: 34%;
   background: rgba(16, 19, 24, 0.95); border: 1px solid var(--line); border-radius: 8px;
   padding: 14px; overflow-y: auto; z-index: 5;
 }
-#detail .det-head { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-#detail .det-head img { width: 64px; height: 64px; border-radius: 8px; }
-#detail .det-name { font-size: 18px; font-weight: 700; }
-#detail .det-role { font-size: 12px; color: var(--muted); }
-#detail .det-close { position: absolute; right: 10px; top: 10px; padding: 2px 8px; }
+#panel .det-head { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+#panel .det-head img { width: 64px; height: 64px; border-radius: 8px; }
+#panel .det-name { font-size: 18px; font-weight: 700; }
+#panel .det-role { font-size: 12px; color: var(--muted); }
+#panel .det-close { position: absolute; right: 10px; top: 10px; padding: 2px 8px; }
 .stat { margin-bottom: 10px; }
 .stat-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
 .stat-row .v { font-weight: 700; }
@@ -196,6 +285,44 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 .bar .hp { background: var(--danger); }
 .bar .energy { background: var(--warn); }
 .det-traits { margin: 8px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: #c6ccd2; }
+/* 패널 공통 (장면 오른쪽 3분의 1. 스팟 이름표를 가리지 않게) */
+#panel { width: 33%; }
+.pn-title { font-size: 17px; font-weight: 700; margin-right: 30px; }
+.pn-sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.pn-info { font-size: 12px; line-height: 1.55; color: #d4d9de; margin-bottom: 6px; }
+.pn-info.dim { color: var(--muted); }
+.pn-rows { font-size: 12px; line-height: 1.7; margin: 6px 0 8px; padding: 6px 8px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; }
+.warn-text { color: var(--warn); }
+.act { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin: 8px 0; background: rgba(255, 255, 255, 0.02); }
+.act-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.act-head span { font-size: 11px; color: var(--muted); }
+.act-info { font-size: 11px; color: #c6ccd2; line-height: 1.5; margin: 4px 0; }
+.act-reason { font-size: 11px; color: var(--warn); margin: 4px 0; }
+.act-go { width: 100%; margin-top: 4px; background: #2b2418; border-color: #6b532a; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip-btn { display: flex; flex-direction: column; align-items: flex-start; padding: 4px 8px; font-size: 12px; }
+.chip-name { display: flex; align-items: center; gap: 5px; }
+.chk {
+  width: 14px; height: 14px; border-radius: 3px; border: 1px solid #6f7a85;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1;
+}
+.chip-btn.on .chk { background: var(--accent); border-color: var(--accent); color: #1a1408; font-weight: 700; }
+.act-help { font-size: 11px; color: #aeb6be; line-height: 1.5; margin: -2px 0 6px; }
+.act-warn { font-size: 11px; color: #f0a37a; margin: 4px 0; }
+.chip-btn small { font-size: 10px; color: var(--muted); }
+.chip-btn.on { border-color: var(--accent); background: #2b2418; }
+.chip-btn.warn small { color: var(--warn); }
+.mini { font-size: 11px; padding: 3px 8px; }
+.mini.on { border-color: var(--accent); color: var(--accent); }
+.hours { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11px; color: var(--muted); margin-top: 6px; }
+.running { margin: 6px 0; }
+.run-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 12px; color: var(--accent); margin-bottom: 4px; }
+
+.crew-card.away { opacity: 0.85; border-style: dashed; }
+.crew-name .sick { color: var(--danger); font-size: 10px; }
+.deficit { font-size: 10px; color: var(--muted); }
+.engine-badge { border: 1px solid transparent; cursor: pointer; }
+
 .mental-tag { font-size: 12px; padding: 1px 8px; border-radius: 8px; background: #23382a; color: #9ad3a1; }
 .mental-tag.shaken { background: #3a3220; color: #e3c27a; }
 .mental-tag.broken { background: #3a2222; color: #e39a9a; }
@@ -272,6 +399,113 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 .crew-trust { font-size: 11px; color: var(--muted); align-self: center; white-space: nowrap; }
 
 #time-controls { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 330px; }
-.tc-buttons { display: flex; gap: 6px; }
+.tc-buttons { display: flex; gap: 6px; align-items: center; }
+.wait-wrap { position: relative; }
+#wait-menu {
+  position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 40;
+  display: flex; flex-direction: column; gap: 4px; min-width: 130px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+#wait-menu button { text-align: left; font-size: 13px; }
 .tc-status { font-size: 12px; color: var(--muted); }
 .tc-status b { color: var(--text); }
+
+/* ---------- 처음 안내창 ---------- */
+#guide {
+  position: absolute; inset: 0; z-index: 25;
+  background: rgba(6, 8, 10, 0.6);
+  display: flex; align-items: center; justify-content: center;
+}
+.guide-card {
+  width: min(78%, 520px);
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 10px;
+  padding: 16px 20px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+.guide-kicker { font-size: 11px; color: var(--accent); letter-spacing: 0.04em; }
+.guide-card h3 { margin: 4px 0 10px; font-size: 18px; }
+.guide-card ul { margin: 0 0 14px; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #d4d9de; }
+.guide-card b { color: var(--text); }
+.guide-card button { width: 100%; background: #2b2418; border-color: #6b532a; }
+
+/* 선택지에서 뺀 사람·하위 제목 */
+.chip-out { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+.chip-none { font-size: 11px; color: var(--warn); margin: 2px 0 4px; }
+.act-sub { font-size: 11px; color: #c6ccd2; font-weight: 600; margin: 6px 0 4px; }
+.act-sub small { font-weight: 400; color: var(--muted); }
+.map-svg .node text.clue { fill: var(--accent); font-size: 20px; stroke-width: 5px; }
+
+/* ---------- 가독성: 글씨 한 단계 키우기 (2026-11-10 플레이 피드백) ---------- */
+.pn-info, .pn-rows { font-size: 13px; }
+.pn-sub { font-size: 13px; }
+.act-head b { font-size: 14px; }
+.act-head span { font-size: 12px; }
+.act-help, .act-info, .act-reason, .act-warn { font-size: 12px; }
+.act-sub { font-size: 12px; }
+.chip-btn { font-size: 13px; }
+.chip-btn small { font-size: 11px; }
+.chip-out, .chip-none { font-size: 12px; }
+.hours { font-size: 12px; }
+.mini { font-size: 12px; }
+.run-row { font-size: 13px; }
+.log-item { font-size: 13px; }
+.log-time, .log-detail { font-size: 12px; }
+.log-badge { font-size: 11px; }
+.log-day { font-size: 12px; }
+.crew-role { font-size: 12px; }
+.crew-bars { font-size: 11px; }
+.tc-status { font-size: 13px; }
+.toast { font-size: 14px; }
+.spot small { font-size: 12px; }
+.spot b { font-size: 14px; }
+.scene-note { font-size: 13px; }
+.travel-panel .tp-row { font-size: 13px; }
+.dlg-box ul, .dlg-box p { font-size: 14px; }
+.dlg-box h4 { font-size: 12px; }
+.guide-card ul { font-size: 14px; }
+
+/* 건물 패널 탭 (물자 / 잠자리) */
+.pn-tabs { display: flex; gap: 4px; margin: 4px 0 10px; border-bottom: 1px solid var(--line); }
+.pn-tabs button {
+  flex: 1; border: none; border-radius: 6px 6px 0 0; background: transparent; color: var(--muted);
+  padding: 6px 0; font-size: 13px; border-bottom: 2px solid transparent;
+}
+.pn-tabs button.on { color: var(--accent); border-bottom-color: var(--accent); background: rgba(227, 164, 74, 0.08); }
+
+/* 패널 안 처음 안내 카드 */
+.pn-guide { border: 1px solid #6b532a; background: rgba(43, 36, 24, 0.6); border-radius: 8px; padding: 8px 10px; margin: 4px 0 10px; }
+.pn-guide-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 13px; color: var(--accent); }
+.pn-guide ul { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.6; color: #d4d9de; }
+
+/* '! 할 일' 표시 */
+.crew-badge {
+  width: auto; height: auto; border-radius: 9px; padding: 1px 7px;
+  font-size: 11px; right: 6px; top: 6px;
+}
+
+/* 지도: 전체 지도는 접어 두고, 패널이 열리면 지역 지도가 왼쪽으로 줄어든다 */
+.map-inset { width: auto; padding: 4px; }
+.map-inset.open { width: 24%; }
+.map-inset.open .mini { width: 100%; margin-bottom: 4px; }
+#stage.panel-open .map-svg { width: 64%; }
+#stage.panel-open .map-inset { display: none; }
+
+/* 판단 화면: 상자가 하나면 전체 폭, 선택지가 하나면 '계속' 버튼 */
+.dlg-extra.single { grid-template-columns: 1fr; }
+.dlg-choices button.continue { background: #2b2418; border-color: #6b532a; color: var(--text); font-weight: 600; }
+#dialog.has-choices.single-choice { cursor: pointer; }
+#dialog.has-choices.single-choice .dlg-footer #dlg-hint { visibility: visible; }
+#stage.panel-open .scene-note.bottom { display: none; }
+
+/* 잠자리: 건물 표시·야영 상태 */
+.spot.shelter { border-color: #6f86a8; }
+.spot.shelter b::before { content: '☾ '; color: #9fb7da; }
+.camp-mark {
+  position: absolute; left: 44%; bottom: 44%; z-index: 2;
+  background: rgba(10, 12, 16, 0.8); border: 1px solid #6f86a8; border-radius: 6px;
+  padding: 4px 8px; font-size: 12px; color: #cfe0f2;
+}
+.pn-safety { font-size: 13px; padding: 6px 8px; border-radius: 6px; margin: 4px 0 8px; }
+.pn-safety.ok { background: #1d2f1f; color: #9ad3a1; }
+.pn-safety.bad { background: #3a1e1e; color: #f0a37a; }

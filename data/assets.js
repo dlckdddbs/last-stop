@@ -4,8 +4,10 @@ window.LS = window.LS || {};
 
 LS.ASSETS = {
   bg: {
-    outskirts_day: 'images/bg/outskirts_day.svg',
-    outskirts_night: 'images/bg/outskirts_night.svg'
+    outskirts_day: 'images/bg/outskirts_day.svg',       // 시작 장소: 버려진 소방서
+    outskirts_night: 'images/bg/outskirts_night.svg',
+    street_day: 'images/bg/street_day.svg',             // 외곽 거리 (장소별 정식 배경 전까지 공용)
+    street_night: 'images/bg/street_night.svg'
   },
   bus: {
     exterior: 'images/bus/exterior.svg',
@@ -20,6 +22,7 @@ LS.ASSETS = {
     yoon_jaeha: 'images/portraits/yoon_jaeha.svg',
     park_seoyun: 'images/portraits/park_seoyun.svg',
     han_jungsu: 'images/portraits/han_jungsu.svg',
+    oh_sujin: 'images/portraits/oh_sujin.svg',
     radio: 'images/portraits/radio.svg'
   },
   icons: {

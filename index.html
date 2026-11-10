@@ -36,7 +36,9 @@
         <div id="stage-wrap">
           <div id="stage">
             <div id="scene"></div>
-            <div id="detail" class="hidden"></div>
+            <div id="toasts"></div>
+            <div id="panel" class="hidden"></div>
+            <div id="guide" class="hidden"></div>
             <div id="dialog" class="hidden">
               <div class="dlg-title" id="dlg-title"></div>
               <div class="dlg-body">
@@ -58,7 +60,13 @@
         </div>
       </div>
       <aside id="log">
-        <h3>기록</h3>
+        <div class="log-head">
+          <h3>기록</h3>
+          <div class="log-filter">
+            <button data-filter="all">전체</button>
+            <button data-filter="important">중요</button>
+          </div>
+        </div>
         <ol id="log-list"></ol>
       </aside>
     </main>
@@ -71,7 +79,16 @@
           <button id="btn-pause" title="멈춤">❚❚ 멈춤</button>
           <button id="btn-play" title="진행">▶ 진행</button>
           <button id="btn-speed" title="배속">1배</button>
-          <button id="btn-next" title="다음 상황까지">⏭ 다음 상황까지</button>
+          <button id="btn-next" title="진행 중인 작업 중 가장 먼저 끝나는 때까지">⏭ 다음 상황까지</button>
+          <div class="wait-wrap">
+            <button id="btn-wait" title="할 일이 없을 때 시간을 보낸다">⏳ 기다리기</button>
+            <div id="wait-menu" class="hidden">
+              <button data-wait="60">1시간</button>
+              <button data-wait="120">2시간</button>
+              <button data-wait="240">4시간</button>
+              <button data-wait="morning">아침 6시까지</button>
+            </div>
+          </div>
         </div>
         <div id="tc-status" class="tc-status"></div>
       </div>
@@ -82,14 +99,23 @@
   <script src="data/config.js"></script>
   <script src="data/assets.js"></script>
   <script src="data/characters.js"></script>
+  <script src="data/places.js"></script>
   <script src="data/locations.js"></script>
   <script src="data/events.js"></script>
   <!-- 로직 -->
   <script src="js/clock.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/world.js"></script>
   <script src="js/state.js"></script>
+  <script src="js/meals.js"></script>
+  <script src="js/tasks.js"></script>
+  <script src="js/travel.js"></script>
+  <script src="js/sim.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/panel.js"></script>
   <script src="js/dialog.js"></script>
   <script src="js/time.js"></script>
+  <script src="js/guide.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

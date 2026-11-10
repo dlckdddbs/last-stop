@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <!-- 임시 배경: 도시 외곽 거리 (밤) -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b111b"/>
+      <stop offset="1" stop-color="#1f2a38"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f2c46b" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#f2c46b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <circle cx="300" cy="120" r="30" fill="#cfd6dd" opacity="0.8"/>
+  <g fill="#141c26">
+    <rect x="1000" y="360" width="70" height="190"/><rect x="1080" y="320" width="60" height="230"/>
+    <rect x="1150" y="390" width="90" height="160"/><rect x="1260" y="340" width="70" height="210"/>
+    <rect x="1340" y="400" width="110" height="150"/><rect x="1460" y="360" width="80" height="190"/>
+  </g>
+  <rect x="60" y="300" width="330" height="410" fill="#262a2f"/>
+  <g fill="#101418"><rect x="90" y="350" width="70" height="60"/><rect x="185" y="350" width="70" height="60"/><rect x="280" y="350" width="70" height="60"/></g>
+  <rect x="120" y="520" width="210" height="190" fill="#0c0f12"/>
+  <rect x="430" y="250" width="380" height="460" fill="#2b2e33"/>
+  <rect x="450" y="300" width="340" height="40" fill="#1c2423"/>
+  <g fill="#101418"><rect x="460" y="380" width="80" height="70"/><rect x="580" y="380" width="80" height="70"/><rect x="700" y="380" width="80" height="70"/></g>
+  <rect x="470" y="520" width="300" height="190" fill="#0b0d0f"/>
+  <rect x="860" y="320" width="300" height="390" fill="#24272b"/>
+  <polygon points="850,320 1010,240 1170,320" fill="#1c1a18"/>
+  <g fill="#101418"><rect x="900" y="380" width="70" height="70"/><rect x="1050" y="380" width="70" height="70"/></g>
+  <rect x="960" y="560" width="90" height="150" fill="#0d0c0b"/>
+  <g stroke="#0d1218" stroke-width="6"><line x1="410" y1="260" x2="410" y2="720"/><line x1="1200" y1="280" x2="1200" y2="720"/></g>
+  <circle cx="1200" cy="360" r="160" fill="url(#lamp)"/>
+  <rect x="1170" y="280" width="40" height="10" fill="#f2c46b"/>
+  <rect x="0" y="710" width="1600" height="190" fill="#191d22"/>
+  <g fill="#3c3d38"><rect x="80" y="815" width="120" height="10"/><rect x="300" y="815" width="120" height="10"/><rect x="520" y="815" width="120" height="10"/><rect x="740" y="815" width="120" height="10"/><rect x="960" y="815" width="120" height="10"/><rect x="1180" y="815" width="120" height="10"/><rect x="1400" y="815" width="120" height="10"/></g>
+  <ellipse cx="1200" cy="725" rx="200" ry="26" fill="#f2c46b" opacity="0.12"/>
+</svg>

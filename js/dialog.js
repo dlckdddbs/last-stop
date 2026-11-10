@@ -11,6 +11,8 @@ LS.Dialog = (function () {
   let phase = 'lines';   // lines | decision | result
   let chosen = null;
   let onDone = null;
+  let active = false;    // 대화창이 실제로 열려 있는가 (안내창도 dialogOpen을 쓰므로 따로 둔다)
+  let logEntry = null;   // 이 사건의 기록 한 줄 (선택·결과를 세부 줄에 덧붙인다)
 
   const esc = (t) => LS.UI.esc(t);
 
@@ -20,15 +22,16 @@ LS.Dialog = (function () {
     return { name: sp.name, portrait: sp.portrait ? LS.ASSETS.portraits[sp.portrait] : null };
   }
 
-  function open(s, eventId, done) {
+  // eventOrId: data/events.js의 id 또는 그 자리에서 만든 사건 객체
+  function open(s, eventOrId, done) {
     state = s;
-    ev = LS.EVENTS[eventId];
+    ev = typeof eventOrId === 'string' ? LS.EVENTS[eventOrId] : eventOrId;
     onDone = done || null;
     chosen = null;
     LS.Time.pause();
     state.dialogOpen = true;
-    state.selectedCrew = null;          // 사건 중에는 상세 정보 패널을 닫는다
-    LS.UI.renderDetail();
+    active = true;
+    LS.Panel.close();                   // 사건 중에는 옆 패널을 닫는다
     LS.UI.renderCrew();
     if (ev.screen) LS.UI.setScreen(ev.screen);
     pages = ev.lines.slice();
@@ -36,7 +39,7 @@ LS.Dialog = (function () {
     phase = 'lines';
     $('dlg-title').textContent = `사건 · ${ev.title} · ${LS.Clock.fullLabel(state.minute)}`;
     $('dialog').classList.remove('hidden');
-    LS.State.addLog(state, `사건: ${ev.title}`, true);
+    logEntry = LS.State.addLog(state, ev.title, true, 'event');
     LS.UI.renderLog();
     LS.UI.renderControls();
     showLine();
@@ -54,7 +57,7 @@ LS.Dialog = (function () {
     t.classList.toggle('narration', line.speaker === 'narration');
     $('dlg-extra').innerHTML = '';
     $('dlg-choices').innerHTML = '';
-    $('dialog').classList.remove('has-choices');
+    $('dialog').classList.remove('has-choices', 'single-choice');
     $('dlg-page').textContent = `${idx + 1} / ${pages.length}`;
   }
 
@@ -73,16 +76,21 @@ LS.Dialog = (function () {
       extra += `<div class="dlg-box"><h4>동료 의견</h4>${ev.opinions.map((o) => `<p><b>${esc(speakerInfo(o.speaker).name)}</b> ${esc(o.text)}</p>`).join('')}</div>`;
     }
     $('dlg-extra').innerHTML = extra;
+    $('dlg-extra').classList.toggle('single', (ev.observations && ev.observations.length ? 1 : 0) + (ev.opinions && ev.opinions.length ? 1 : 0) === 1);
+    // 선택지가 하나뿐이면 고르는 척하지 않고 '계속' 버튼으로 보여준다 (Space로도 넘어간다)
+    const single = ev.choices.length === 1;
+    if (single) t.textContent = '확인했으면 계속하세요.';
     $('dlg-choices').innerHTML = ev.choices.map((c, i) =>
-      `<button data-choice="${i}">${esc(c.label)}${c.desc ? `<span class="choice-desc">${esc(c.desc)}</span>` : ''}</button>`
+      `<button class="${single ? 'continue' : ''}" data-choice="${i}" ${c.disabled ? 'disabled' : ''}>${single ? '▶ ' : ''}${esc(c.label)}${c.desc ? `<span class="choice-desc">${esc(c.desc)}</span>` : ''}</button>`
     ).join('');
     $('dialog').classList.add('has-choices');
+    $('dialog').classList.toggle('single-choice', single);
     $('dlg-page').textContent = '';
   }
 
   function choose(i) {
     chosen = ev.choices[i];
-    LS.State.addLog(state, `선택: ${chosen.label}`);
+    if (logEntry && ev.choices.length > 1) logEntry.detail = `선택: ${chosen.label}`;
     const r = chosen.result || {};
     pages = (r.lines || []).slice();
     idx = 0;
@@ -92,10 +100,12 @@ LS.Dialog = (function () {
 
   function finish() {
     const r = (chosen && chosen.result) || {};
+    if (chosen && chosen.run) chosen.run(state);
     if (r.flags) Object.assign(state.flags, r.flags);
-    if (r.log) LS.State.addLog(state, r.log);
+    if (r.log && logEntry) logEntry.detail = [logEntry.detail, r.log].filter(Boolean).join(' · ');
     $('dialog').classList.add('hidden');
     state.dialogOpen = false;
+    active = false;
     chosen = null;
     if (r.goto) state.screen = r.goto;
     LS.UI.renderAll();
@@ -103,7 +113,11 @@ LS.Dialog = (function () {
   }
 
   function advance() {
-    if (!state || !state.dialogOpen || phase === 'decision') return;
+    if (!active) return;
+    if (phase === 'decision') {
+      if (ev.choices.length === 1 && !ev.choices[0].disabled) choose(0);
+      return;
+    }
     if (idx < pages.length - 1) { idx++; showLine(); return; }
     if (phase === 'lines') {
       if (ev.choices && ev.choices.length) showDecision(); else finish();
@@ -115,12 +129,12 @@ LS.Dialog = (function () {
   function bind() {
     $('dialog').addEventListener('click', (e) => {
       const b = e.target.closest('[data-choice]');
-      if (b) { e.stopPropagation(); choose(Number(b.dataset.choice)); return; }
+      if (b) { e.stopPropagation(); if (!b.disabled) choose(Number(b.dataset.choice)); return; }
       advance();
     });
     // 대화창이 열려 있으면 Space/Enter는 대사 넘기기에만 쓴다
     document.addEventListener('keydown', (e) => {
-      if (!state || !state.dialogOpen) return;
+      if (!active) return;
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
         e.stopImmediatePropagation();

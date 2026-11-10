@@ -4,18 +4,49 @@ window.LS = window.LS || {};
 LS.State = (function () {
   function member(id) {
     const b = LS.CONFIG.member;
-    return { id, hp: b.hp, energy: b.energy, mental: b.mental, deficit: b.deficit, status: '정상', task: null };
+    return {
+      id, hp: b.hp, energy: b.energy, mental: b.mental, deficit: b.deficit,
+      status: '정상',
+      task: null,                 // 진행 중인 작업 id
+      poisonUntil: 0,             // 식중독이 끝나는 시각(분)
+      sleepStreak: 0,             // 누워서 이어 잔 시간(분)
+      lastMentalSleep: -99999,    // 수면 정신력 보너스를 받은 시각
+      lastHpSleep: -99999,        // 수면 HP 보너스를 받은 시각
+      lastTalk: -99999            // 회복 대화에 참여한 시각
+    };
   }
+
+  // 설비 칸: 처음부터 환자용 침상 1개가 한 칸을 차지한다. power: 엔진이 켜져 있어야 쓰는 설비인가
+  function startFacilities(s) {
+    const f = new Array(s.facilitySlots).fill(null);
+    for (let i = 0; i < s.bedSlots; i++) f[i] = { id: 'beds', name: s.beds === 1 ? '환자용 침상' : `침상 ${s.beds}개`, beds: s.beds, power: false };
+    return f;
+  }
+
+  // 새 동료 합류 (좌석이 있어야 한다)
+  function addMember(state, id, roleLabel) {
+    if (state.crew.some((m) => m.id === id)) return false;
+    if (state.crew.length >= state.bus.seats) { addLog(state, `${LS.Rules.josa(LS.CHARACTERS[id].name, '을를')} 태울 좌석이 없다`, true, 'event'); return false; }
+    state.crew.push(member(id));
+    addLog(state, `${LS.CHARACTERS[id].name} 합류`, true, 'event', roleLabel || LS.CHARACTERS[id].role);
+    return true;
+  }
+
+  // 버스에 있는 침상 수
+  function beds(state) { return state.bus.facilities.reduce((n, f) => n + (f && f.beds ? f.beds : 0), 0); }
 
   function create() {
     const s = LS.CONFIG.start;
-    return {
-      minute: 0,                       // 1일째 00시부터 경과한 분
+    const state = {
+      minute: s.hour * 60,             // 1일째 00시부터 경과한 분 (06시에 시작)
       screen: 'outside',               // bus | outside | map | travel
-      locationId: s.locationId,
-      crew: s.crew.map(member),        // 배열 순서 = 좌석 순서 (0번이 운전석)
+      locationId: s.locationId,        // 장소 id, 도로 위에 멈추면 'roadside'
+      crew: s.crew.map(member),        // 배열 순서 = 좌석 순서
+      dead: [],                        // 사망한 동료 기록
       resources: {
-        food: s.food, foodCap: s.foodCap, fresh: [],
+        food: s.food,                  // 보존식 (인분)
+        fresh: [],                     // 신선식품 묶음 [{ amount, freshness }]
+        foodCap: s.foodCap,
         fuel: s.fuel, fuelCap: s.fuelCap,
         meds: s.meds, parts: s.parts,
         suppressant: 0, antidote: 0
@@ -23,19 +54,29 @@ LS.State = (function () {
       bus: {
         durability: s.durability, maxDurability: s.maxDurability,
         seats: s.seats, engineOn: false,
-        facilities: new Array(s.facilitySlots).fill(null)
+        facilities: startFacilities(s)
       },
       trust: s.trust,
       reputation: { medical: 0, merchant: 0, residents: 0, military: 0 },
+      mealPolicy: null,                // 첫 정규 식사에서 정한다: normal | half | skip
+      tasks: [],                       // 진행 중인 작업
+      travel: null,                    // 이동 중이면 경로·진척
+      roadside: null,                  // 도로 위에 멈춘 위치
+      places: {},                      // 장소별 보급·정찰 상태 (world.js가 생성)
+      routes: {},                      // 경로별 확인 여부
       flags: {},                       // 사건 진행 표시 (예: airportKnown)
       fired: {},                       // 이미 일어난 예정 사건
       log: [],
+      logFilter: 'all',                // all | important
+      guides: {},                      // 이미 본 안내창
+      hints: { assigned: 0 },          // 처음 몇 번만 보여줄 안내
       running: false,
       speedIndex: 0,
       dialogOpen: false,
-      selectedCrew: null,
       gameOver: false
     };
+    LS.World.generate(state);
+    return state;
   }
 
   function mentalStage(v) {
@@ -43,12 +84,37 @@ LS.State = (function () {
     return '흔들림';
   }
 
-  function addLog(state, text, important) {
-    state.log.push({ minute: state.minute, text, important: !!important });
-    if (state.log.length > 300) state.log.shift();
+  // kind: event 사건 | task 작업 | travel 이동 | meal 식사 | body 몸 상태 | time 시간 | system 안내
+  // detail: 아래 작은 글씨로 보여줄 세부 내용
+  function addLog(state, text, important, kind, detail) {
+    const entry = { minute: state.minute, text, important: !!important, kind: kind || 'system', detail: detail || '' };
+    state.log.push(entry);
+    if (state.log.length > 400) state.log.shift();
+    return entry;   // 사건 기록은 나중에 선택·결과를 세부 줄에 덧붙인다
   }
 
-  function location(state) { return LS.LOCATIONS[state.locationId]; }
+  function location(state) { return LS.World.location(state); }
 
-  return { create, mentalStage, addLog, location };
+  function place(state, id) { return state.places[id || state.locationId]; }
+
+  function foodTotal(state) {
+    const r = state.resources;
+    return r.food + r.fresh.reduce((a, b) => a + b.amount, 0);
+  }
+
+  function killMember(state, id) {
+    const idx = state.crew.findIndex((m) => m.id === id);
+    if (idx < 0) return;
+    const m = state.crew[idx];
+    // 진행 중인 작업에서 빼낸다
+    state.tasks.forEach((t) => { t.members = t.members.filter((x) => x !== id); });
+    state.crew.splice(idx, 1);
+    state.dead.push({ id, minute: state.minute });
+    addLog(state, `${LS.Rules.josa(LS.CHARACTERS[id].name, '이가')} 숨졌다.`, true, 'body');
+    state.crew.forEach((o) => { o.mental = Math.max(0, o.mental + LS.CONFIG.shock.death); });
+    if (id === 'yoon_jaeha') state.protagonistDead = true;
+    return m;
+  }
+
+  return { create, mentalStage, addLog, location, place, foodTotal, killMember, beds, member, addMember };
 })();
