@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 임시 그림: 배터리 라디오 -->
+  <rect width="256" height="256" fill="#26292d"/>
+  <line x1="160" y1="70" x2="200" y2="22" stroke="#9aa0a6" stroke-width="6" stroke-linecap="round"/>
+  <rect x="40" y="80" width="176" height="120" rx="14" fill="#5b4a36"/>
+  <rect x="58" y="98" width="80" height="84" rx="8" fill="#2f2a24"/>
+  <g fill="#4a4036">
+    <circle cx="78" cy="118" r="5"/><circle cx="98" cy="118" r="5"/><circle cx="118" cy="118" r="5"/>
+    <circle cx="78" cy="140" r="5"/><circle cx="98" cy="140" r="5"/><circle cx="118" cy="140" r="5"/>
+    <circle cx="78" cy="162" r="5"/><circle cx="98" cy="162" r="5"/><circle cx="118" cy="162" r="5"/>
+  </g>
+  <rect x="152" y="100" width="48" height="22" rx="4" fill="#c9b37a"/>
+  <circle cx="166" cy="158" r="14" fill="#2f2a24"/>
+  <circle cx="194" cy="158" r="10" fill="#2f2a24"/>
+  <path d="M206 48 Q222 64 206 80 M218 40 Q242 64 218 88" stroke="#e3a44a" stroke-width="5" fill="none" stroke-linecap="round"/>
+</svg>

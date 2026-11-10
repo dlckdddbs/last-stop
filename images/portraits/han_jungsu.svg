@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 임시 초상: 한정수 (전직 버스 기사) -->
+  <rect width="256" height="256" fill="#2a3044"/>
+  <path d="M28 256 C34 188 82 164 128 164 C174 164 222 188 228 256 Z" fill="#3b4f7a"/>
+  <path d="M106 166 L128 196 L150 166 Z" fill="#e6e2d6"/>
+  <rect x="124" y="170" width="8" height="40" fill="#7a2e2a"/>
+  <rect x="110" y="140" width="36" height="30" fill="#c08e70"/>
+  <ellipse cx="128" cy="106" rx="46" ry="52" fill="#c99c7e"/>
+  <path d="M78 84 C80 54 108 46 128 46 C150 46 178 54 178 84 Z" fill="#2c3f66"/>
+  <rect x="70" y="80" width="116" height="12" rx="6" fill="#22334f"/>
+  <path d="M84 108 C86 96 90 92 96 92" stroke="#8c8c8c" stroke-width="4" fill="none"/>
+  <rect x="96" y="108" width="22" height="5" rx="2" fill="#2a2a2a"/>
+  <rect x="138" y="108" width="22" height="5" rx="2" fill="#2a2a2a"/>
+  <path d="M108 136 Q128 146 148 136" stroke="#8c8c8c" stroke-width="5" fill="none"/>
+  <text x="18" y="38" font-family="Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#8fb1e6">한</text>
+</svg>

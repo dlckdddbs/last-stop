@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <!-- 임시 배경: 도시 외곽 · 버려진 소방서 (낮) -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fb0bd"/>
+      <stop offset="1" stop-color="#d9d3c3"/>
+    </linearGradient>
+    <linearGradient id="fog" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9d3c3" stop-opacity="0"/>
+      <stop offset="1" stop-color="#d9d3c3" stop-opacity="0.55"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <!-- 먼 도시 -->
+  <g fill="#8794a0">
+    <rect x="760" y="380" width="60" height="180"/>
+    <rect x="830" y="330" width="80" height="230"/>
+    <rect x="920" y="400" width="50" height="160"/>
+    <rect x="985" y="300" width="70" height="260"/>
+    <polygon points="1055,560 1055,350 1080,330 1110,370 1110,560"/>
+    <rect x="1120" y="410" width="90" height="150"/>
+    <rect x="1220" y="360" width="55" height="200"/>
+    <rect x="1290" y="430" width="120" height="130"/>
+    <rect x="1420" y="380" width="70" height="180"/>
+  </g>
+  <rect x="0" y="420" width="1600" height="160" fill="url(#fog)"/>
+  <!-- 전봇대와 전선 -->
+  <g stroke="#4b4f54" stroke-width="6">
+    <line x1="700" y1="300" x2="700" y2="700"/>
+    <line x1="1180" y1="320" x2="1180" y2="700"/>
+    <line x1="1520" y1="330" x2="1520" y2="700"/>
+  </g>
+  <g stroke="#4b4f54" stroke-width="2" fill="none">
+    <path d="M700 320 Q940 360 1180 340"/>
+    <path d="M1180 340 Q1350 370 1520 350"/>
+    <path d="M700 335 Q940 380 1180 355"/>
+  </g>
+  <!-- 소방서 건물 -->
+  <rect x="110" y="300" width="560" height="420" fill="#8c8781"/>
+  <rect x="110" y="290" width="560" height="22" fill="#6e6a65"/>
+  <rect x="150" y="330" width="90" height="70" fill="#4d5359"/>
+  <rect x="270" y="330" width="90" height="70" fill="#3f4448"/>
+  <rect x="420" y="330" width="90" height="70" fill="#4d5359"/>
+  <rect x="540" y="330" width="90" height="70" fill="#4d5359"/>
+  <rect x="300" y="300" width="160" height="0" fill="#7a2e2a"/>
+  <rect x="330" y="236" width="120" height="54" fill="#7a2e2a"/>
+  <text x="390" y="275" font-family="Malgun Gothic, sans-serif" font-size="34" font-weight="700" fill="#e8d9c0" text-anchor="middle">119</text>
+  <!-- 차고 문 -->
+  <rect x="150" y="450" width="220" height="270" fill="#1f2326"/>
+  <rect x="410" y="450" width="220" height="270" fill="#7a2e2a"/>
+  <g stroke="#5e2420" stroke-width="4">
+    <line x1="410" y1="490" x2="630" y2="490"/>
+    <line x1="410" y1="530" x2="630" y2="530"/>
+    <line x1="410" y1="570" x2="630" y2="570"/>
+    <line x1="410" y1="610" x2="630" y2="610"/>
+    <line x1="410" y1="650" x2="630" y2="650"/>
+    <line x1="410" y1="690" x2="630" y2="690"/>
+  </g>
+  <!-- 땅과 도로 -->
+  <rect x="0" y="700" width="1600" height="200" fill="#5f6163"/>
+  <rect x="0" y="700" width="1600" height="10" fill="#4c4e50"/>
+  <g fill="#b9b39f">
+    <rect x="720" y="812" width="110" height="10"/>
+    <rect x="900" y="812" width="110" height="10"/>
+    <rect x="1080" y="812" width="110" height="10"/>
+    <rect x="1260" y="812" width="110" height="10"/>
+    <rect x="1440" y="812" width="110" height="10"/>
+  </g>
+  <!-- 버려진 차 -->
+  <g fill="#3e4245">
+    <rect x="1300" y="650" width="230" height="60" rx="10"/>
+    <polygon points="1340,650 1370,610 1470,610 1500,650"/>
+  </g>
+  <circle cx="1350" cy="712" r="22" fill="#26292b"/>
+  <circle cx="1480" cy="712" r="22" fill="#26292b"/>
+  <!-- 잔해 -->
+  <g fill="#6f6a62">
+    <polygon points="700,700 760,680 790,700"/>
+    <polygon points="860,705 900,690 930,708"/>
+  </g>
+</svg>

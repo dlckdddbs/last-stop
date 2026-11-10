@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320">
+  <!-- 임시 그림: 대형버스 옆모습 (앞이 오른쪽) -->
+  <rect x="20" y="40" width="740" height="210" rx="26" fill="#d6d1c3"/>
+  <rect x="20" y="40" width="740" height="210" rx="26" fill="none" stroke="#8f8a7d" stroke-width="4"/>
+  <rect x="20" y="175" width="740" height="26" fill="#3d6f74"/>
+  <!-- 창문 -->
+  <g fill="#2a3540">
+    <rect x="50" y="62" width="90" height="80" rx="6"/>
+    <rect x="152" y="62" width="90" height="80" rx="6"/>
+    <rect x="254" y="62" width="90" height="80" rx="6"/>
+    <rect x="356" y="62" width="90" height="80" rx="6"/>
+    <rect x="458" y="62" width="90" height="80" rx="6"/>
+    <path d="M640 62 H720 Q748 64 752 100 V142 H640 Z"/>
+  </g>
+  <!-- 문 -->
+  <rect x="566" y="62" width="62" height="170" rx="4" fill="#33404c"/>
+  <line x1="597" y1="62" x2="597" y2="232" stroke="#1f2830" stroke-width="3"/>
+  <!-- 흠집과 녹 -->
+  <g fill="#9a7b5a" opacity="0.6">
+    <circle cx="110" cy="220" r="10"/><circle cx="420" cy="232" r="7"/><rect x="300" y="210" width="40" height="8"/>
+  </g>
+  <!-- 앞등 -->
+  <rect x="742" y="205" width="16" height="22" rx="4" fill="#efe2b0"/>
+  <!-- 바퀴 -->
+  <g>
+    <circle cx="150" cy="252" r="44" fill="#191b1d"/>
+    <circle cx="150" cy="252" r="18" fill="#6a6e72"/>
+    <circle cx="640" cy="252" r="44" fill="#191b1d"/>
+    <circle cx="640" cy="252" r="18" fill="#6a6e72"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" preserveAspectRatio="none">
+  <!-- 임시 그림: 이동 화면 먼 배경 (가로로 반복) -->
+  <g fill="#56616c">
+    <rect x="20" y="230" width="60" height="140"/>
+    <rect x="95" y="190" width="80" height="180"/>
+    <rect x="190" y="250" width="50" height="120"/>
+    <rect x="260" y="170" width="70" height="200"/>
+    <rect x="350" y="240" width="110" height="130"/>
+    <rect x="480" y="200" width="60" height="170"/>
+    <rect x="560" y="260" width="90" height="110"/>
+    <rect x="670" y="210" width="70" height="160"/>
+  </g>
+  <rect x="0" y="368" width="800" height="82" fill="#3f454b"/>
+</svg>

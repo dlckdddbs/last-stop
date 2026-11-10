@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet">
+  <!-- 임시 그림: 버스 내부 평면도 (앞이 왼쪽). 좌석·설비 칸 위치는 js/ui.js의 BUS_LAYOUT과 맞춘다. -->
+  <rect width="1600" height="900" fill="#14181d"/>
+  <!-- 차체 -->
+  <rect x="70" y="150" width="1460" height="600" rx="60" fill="#2b3138" stroke="#4a525b" stroke-width="6"/>
+  <path d="M70 230 Q70 150 150 150 L150 750 Q70 750 70 670 Z" fill="#3a4550"/>
+  <!-- 창문 줄 -->
+  <g fill="#3d4a57" opacity="0.8">
+    <rect x="170" y="158" width="1320" height="14"/>
+    <rect x="170" y="728" width="1320" height="14"/>
+  </g>
+  <!-- 바닥 통로 -->
+  <rect x="260" y="400" width="1220" height="100" fill="#22282e"/>
+  <g stroke="#2f363d" stroke-width="2">
+    <line x1="260" y1="450" x2="1480" y2="450" stroke-dasharray="12 10"/>
+  </g>
+  <!-- 운전석과 핸들 -->
+  <rect x="140" y="540" width="120" height="120" rx="14" fill="#38414a"/>
+  <circle cx="200" cy="510" r="34" fill="none" stroke="#5b6570" stroke-width="8"/>
+  <!-- 앞문 -->
+  <rect x="300" y="736" width="110" height="14" fill="#556270"/>
+  <!-- 좌석 자리 -->
+  <g fill="#38414a">
+    <rect x="320" y="200" width="120" height="120" rx="14"/>
+    <rect x="320" y="560" width="120" height="120" rx="14"/>
+    <rect x="480" y="200" width="120" height="120" rx="14"/>
+    <rect x="480" y="560" width="120" height="120" rx="14"/>
+    <rect x="640" y="200" width="120" height="120" rx="14"/>
+  </g>
+  <!-- 복구 가능한 좌석 자리 -->
+  <g fill="none" stroke="#4e5862" stroke-width="4" stroke-dasharray="14 10">
+    <rect x="640" y="560" width="120" height="120" rx="14"/>
+    <rect x="800" y="560" width="120" height="120" rx="14"/>
+  </g>
+  <!-- 뒤쪽 설비 공간 -->
+  <rect x="960" y="190" width="540" height="520" rx="20" fill="#20262c"/>
+  <g fill="none" stroke="#3f4952" stroke-width="4" stroke-dasharray="16 12">
+    <rect x="990" y="215" width="220" height="200" rx="12"/>
+    <rect x="1250" y="215" width="220" height="200" rx="12"/>
+    <rect x="990" y="485" width="220" height="200" rx="12"/>
+    <rect x="1250" y="485" width="220" height="200" rx="12"/>
+  </g>
+  <!-- 무기 보관함 (운전석 뒤) -->
+  <rect x="140" y="230" width="110" height="80" rx="8" fill="#3b3326" stroke="#5c4f38" stroke-width="3"/>
+</svg>

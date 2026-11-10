@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>마지막 정류장</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 위쪽: 시간·남은 기한·공통 자원 (01장 정보 배치) -->
+    <header id="topbar">
+      <div class="tb-time">
+        <span id="tb-day" class="tb-day">D1</span>
+        <span id="tb-clock" class="tb-clock">00:00</span>
+        <span id="tb-phase" class="tb-phase">밤</span>
+      </div>
+      <div class="tb-deadline">
+        <div class="tb-label">접수 마감까지</div>
+        <div id="tb-remaining" class="tb-remaining">30일 0시간</div>
+        <div class="tb-bar"><div id="tb-remaining-bar"></div></div>
+      </div>
+      <div id="tb-resources" class="tb-resources"></div>
+      <div id="tb-bus" class="tb-bus"></div>
+    </header>
+
+    <!-- 가운데: 화면 전환 탭 + 장면 + 기록 -->
+    <main id="middle">
+      <div id="stage-column">
+        <nav id="screen-tabs">
+          <button data-screen="bus">버스 내부</button>
+          <button data-screen="outside">정차 외부</button>
+          <button data-screen="map">지도</button>
+          <button data-screen="travel">이동</button>
+        </nav>
+        <div id="stage-wrap">
+          <div id="stage">
+            <div id="scene"></div>
+            <div id="detail" class="hidden"></div>
+            <div id="dialog" class="hidden">
+              <div class="dlg-title" id="dlg-title"></div>
+              <div class="dlg-body">
+                <img class="dlg-portrait" id="dlg-portrait" alt="">
+                <div class="dlg-main">
+                  <div class="dlg-speaker" id="dlg-speaker"></div>
+                  <div class="dlg-text" id="dlg-text"></div>
+                  <div class="dlg-extra" id="dlg-extra"></div>
+                  <div class="dlg-choices" id="dlg-choices"></div>
+                </div>
+              </div>
+              <div class="dlg-footer">
+                <span id="dlg-page"></span>
+                <span id="dlg-hint">클릭 또는 Space로 계속</span>
+              </div>
+            </div>
+            <div id="gameover" class="hidden"></div>
+          </div>
+        </div>
+      </div>
+      <aside id="log">
+        <h3>기록</h3>
+        <ol id="log-list"></ol>
+      </aside>
+    </main>
+
+    <!-- 아래쪽: 동료 목록·시간 조작 -->
+    <footer id="bottombar">
+      <div id="crew-list"></div>
+      <div id="time-controls">
+        <div class="tc-buttons">
+          <button id="btn-pause" title="멈춤">❚❚ 멈춤</button>
+          <button id="btn-play" title="진행">▶ 진행</button>
+          <button id="btn-speed" title="배속">1배</button>
+          <button id="btn-next" title="다음 상황까지">⏭ 다음 상황까지</button>
+        </div>
+        <div id="tc-status" class="tc-status"></div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 데이터 -->
+  <script src="data/config.js"></script>
+  <script src="data/assets.js"></script>
+  <script src="data/characters.js"></script>
+  <script src="data/locations.js"></script>
+  <script src="data/events.js"></script>
+  <!-- 로직 -->
+  <script src="js/clock.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/dialog.js"></script>
+  <script src="js/time.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

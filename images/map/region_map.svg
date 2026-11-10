@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet">
+  <!-- 임시 그림: 지역 지도. 지역·장소 위치는 data/locations.js의 백분율 좌표와 맞춘다. -->
+  <rect width="1600" height="900" fill="#1a2027"/>
+  <g stroke="#232b33" stroke-width="1">
+    <path d="M0 100 H1600 M0 200 H1600 M0 300 H1600 M0 400 H1600 M0 500 H1600 M0 600 H1600 M0 700 H1600 M0 800 H1600"/>
+    <path d="M100 0 V900 M200 0 V900 M300 0 V900 M400 0 V900 M500 0 V900 M600 0 V900 M700 0 V900 M800 0 V900 M900 0 V900 M1000 0 V900 M1100 0 V900 M1200 0 V900 M1300 0 V900 M1400 0 V900 M1500 0 V900"/>
+  </g>
+  <!-- 강 -->
+  <path d="M760 0 C720 200 820 330 760 470 C700 610 790 760 740 900" fill="none" stroke="#24384a" stroke-width="40"/>
+  <!-- 지역 -->
+  <g stroke-width="3">
+    <path d="M60 360 L300 300 L380 420 L330 700 L90 740 Z" fill="#2a3a2f" stroke="#3f5a46"/>
+    <path d="M380 250 L640 210 L700 420 L560 520 L380 420 Z" fill="#2f3443" stroke="#475068"/>
+    <path d="M760 120 L1060 110 L1100 360 L860 400 L780 320 Z" fill="#3a2f33" stroke="#5c4850"/>
+    <path d="M760 520 L1060 500 L1080 760 L800 800 Z" fill="#343428" stroke="#55553d"/>
+    <path d="M1200 280 L1540 250 L1560 660 L1220 690 Z" fill="#2c3a44" stroke="#46606f"/>
+  </g>
+  <!-- 큰길 -->
+  <g fill="none" stroke="#6f6a5c" stroke-width="6" stroke-linecap="round">
+    <path d="M190 560 L560 400 L900 270 L1360 460"/>
+    <path d="M560 400 L920 640 L1360 460"/>
+  </g>
+  <!-- 다리 -->
+  <rect x="740" y="300" width="60" height="16" fill="#8a826e"/>
+  <rect x="728" y="612" width="60" height="16" fill="#8a826e"/>
+  <!-- 지역 이름 -->
+  <g font-family="Malgun Gothic, sans-serif" font-size="30" fill="#c9ccc6" text-anchor="middle">
+    <text x="210" y="340">도시 외곽</text>
+    <text x="540" y="250">주거 지역</text>
+    <text x="930" y="160">도심</text>
+    <text x="920" y="560">군부대 주변</text>
+    <text x="1380" y="310">공항 지역</text>
+  </g>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" preserveAspectRatio="none">
+  <!-- 임시 그림: 이동 화면 가까운 배경 (가로로 반복). 도로·가드레일·전봇대 -->
+  <rect x="0" y="330" width="800" height="120" fill="#2e3236"/>
+  <g fill="#bdb6a0">
+    <rect x="40" y="398" width="120" height="8"/>
+    <rect x="240" y="398" width="120" height="8"/>
+    <rect x="440" y="398" width="120" height="8"/>
+    <rect x="640" y="398" width="120" height="8"/>
+  </g>
+  <rect x="0" y="318" width="800" height="12" fill="#6d7378"/>
+  <g fill="#6d7378">
+    <rect x="30" y="318" width="8" height="26"/>
+    <rect x="230" y="318" width="8" height="26"/>
+    <rect x="430" y="318" width="8" height="26"/>
+    <rect x="630" y="318" width="8" height="26"/>
+  </g>
+  <g stroke="#1e2226" stroke-width="8">
+    <line x1="120" y1="80" x2="120" y2="330"/>
+    <line x1="520" y1="80" x2="520" y2="330"/>
+  </g>
+  <g stroke="#1e2226" stroke-width="3" fill="none">
+    <path d="M0 110 Q60 130 120 100 Q320 140 520 100 Q660 135 800 110"/>
+  </g>
+</svg>
