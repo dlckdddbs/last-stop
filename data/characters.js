@@ -34,6 +34,42 @@ LS.CHARACTERS = {
     traits: ['정비원: 수리하면 내구도 +5 더', '고물·부품에 밝다', '운전 불가 (임시)'],
     request: '주유소 빚 연료 1 대신 상환 · 5일 (부탁은 5단계)'
   },
+  // ---------- 주거 지역 (5단계, 16장 인물 목록) ----------
+  kim_narae: {
+    name: '김나래',
+    role: '배달 경험 · 상인 · 주거 편의점',
+    canDrive: true,                // 임시값: 배달 일을 했으니 운전 가능
+    expert: 'local',
+    traits: ['지역 경험자: 경로 정찰 2시간 → 1시간', '골목길을 잘 안다', '합류 조건: 하루 두 끼 정상 배급'],
+    joinCondition: '하루 두 끼 정상 배급',
+    condition: 'twoMeals',
+    warnLine: '두 끼는 제대로 먹자고 했잖아요. 배고프면 다리가 안 움직여요.',
+    leaveLine: '약속이 자꾸 깨지네요. 다음에 서는 곳에서 내릴게요.',
+    request: '동생 집 조사 · 2인 2시간 (부탁은 다음 업데이트)'
+  },
+  jung_minkyung: {
+    name: '정민경',
+    role: '하율 엄마 · 주거 아파트',
+    canDrive: false,
+    traits: ['아이와 함께 다닌다', '합류 조건: 가족을 떼어 놓지 않는다'],
+    joinCondition: '가족을 분리하지 않는다',
+    condition: 'family'
+  },
+  jung_hayul: {
+    name: '정하율',
+    role: '정민경의 딸 · 아홉 살',
+    canDrive: false,
+    child: true,                   // 아이는 일을 맡지 않는다 (잠·휴식만)
+    traits: ['아이: 일을 맡지 않는다', '버스 창문에 그림을 그린다']
+  },
+  seo_dongjin: {
+    name: '서동진',
+    role: '약사 · 의료 · 주거 약국',
+    canDrive: false,
+    expert: 'pharmacist',
+    traits: ['약사: 약국을 뒤지면 의약품 +1 (임시)', '억제제 재료를 안다 (부탁은 다음 업데이트)'],
+    request: '억제제 재료 확보 · 5일 · 억제제 1 보상 (다음 업데이트)'
+  },
   // 임시 인물 (2026-11-11, Claude 추가): 임시 동행과 검사(상처 판별)를 익히는 정직한 사람
   lee_junghoon: {
     name: '이정훈',

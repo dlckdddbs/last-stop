@@ -94,6 +94,8 @@ LS.Tasks = (function () {
       const R2 = C().road;
       return R2.investigateMin + (ids.includes('yoon_jaeha') ? R2.removeMinFirefighter : R2.removeMin);
     }
+    // 지역 경험자(김나래): 경로 정찰 2시간 → 1시간 (16장 전문가)
+    if (type === 'scout_route' && ids.some((id) => (LS.CHARACTERS[id] || {}).expert === 'local')) return 60;
     return d.minutes || 0;
   }
 
@@ -111,6 +113,8 @@ LS.Tasks = (function () {
     if (d.outside && LS.Zombie.siegeActive(state)) return '포위 중에는 밖에 나갈 수 없다';
     const tempM = ms.find((m) => m.temp);
     if (tempM && !d.isSleep) return `${josa(R().name(tempM.id), '은는')} 임시 동행이라 일을 맡지 않는다`;
+    const kid = ms.find((m) => LS.CHARACTERS[m.id].child);
+    if (kid && (!d.isSleep || opts.clear)) return `${josa(R().name(kid.id), '은는')} 아이라서 일을 맡지 않는다`;
     if (d.person) {
       const r = state.people[opts.person];
       if (!r || r.status !== 'met' || r.at !== state.locationId) return '이야기할 사람이 없다';
@@ -567,6 +571,8 @@ LS.Tasks = (function () {
         const left = avail - planned + (take - stored);   // 잃은 몫은 사라지고, 보관 한도를 넘은 몫은 남는다
         spot.remaining[k] = k === 'fuel' ? R().round1(left) : Math.round(left);
         if (stored > 0) got.push(`${LS.LOOT_NAMES[k].name} +${stored}${LS.LOOT_NAMES[k].unit}`);
+        // 약사(서동진)가 약국을 뒤지면 의약품 +1 (임시)
+        if (k === 'meds' && done && ms.some((m) => LS.CHARACTERS[m.id].expert === 'pharmacist')) { state.resources.meds += 1; got.push('약사가 찾은 의약품 +1회분'); }
         if (take > stored) parts.push(`보관 한도를 넘어 ${LS.LOOT_NAMES[k].name} ${R().round1(take - stored)}${LS.LOOT_NAMES[k].unit}를 두고 왔다.`);
       });
       spot.farmedOnce = true;
@@ -715,7 +721,7 @@ LS.Tasks = (function () {
 
   // 지금 이 사람에게 맡길 만한 일이 있는가 ('! 할 일' 표시용. 잠은 일로 치지 않는다)
   function hasWork(state, m) {
-    if (state.travel || m.task || m.temp || !R().canHeavy(state, m) || !R().canOutside(state, m) || LS.Zombie.siegeActive(state)) return false;
+    if (state.travel || m.task || m.temp || LS.CHARACTERS[m.id].child || !R().canHeavy(state, m) || !R().canOutside(state, m) || LS.Zombie.siegeActive(state)) return false;
     const place = LS.State.place(state);
     if (!place) return false;
     if (state.locationId === 'roadside' && state.roadside && state.roadside.blocked) return true;
@@ -727,7 +733,7 @@ LS.Tasks = (function () {
     });
     if (spotWork) return true;
     if (state.locationId !== 'roadside') {
-      return LS.World.routesFrom(state.locationId).some((r) => { const i = state.routes[r.key]; return !i.known && !i.traveled; });
+      return LS.World.routesFrom(state.locationId, state).some((r) => { const i = state.routes[r.key]; return !i.known && !i.traveled; });
     }
     return false;
   }

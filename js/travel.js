@@ -25,7 +25,7 @@ LS.Travel = (function () {
         { to: rs.from, key: rs.key, baseMinutes: rs.progress, forward: false }
       ];
     }
-    return LS.World.routesFrom(state.locationId).map((r) => ({ to: r.to, key: r.key, baseMinutes: r.hours * 60, road: r.road }));
+    return LS.World.routesFrom(state.locationId, state).map((r) => ({ to: r.to, key: r.key, baseMinutes: r.hours * 60, road: r.road }));
   }
 
   function plan(state, toId, driverId) {
@@ -131,7 +131,7 @@ LS.Travel = (function () {
     const loc = LS.State.location(state);
     const toasts = LS.Zombie.onDepart(state, d.id);   // 돌고 돌아오면 같은 자리라, 만난 사람은 그대로 기다린다
     state.travel = {
-      loop: true, key: null, from: state.locationId, to: state.locationId, name: loc.name, mapPos: loc.map,
+      loop: true, key: null, from: state.locationId, to: state.locationId, name: loc.name, mapPos: loc.map, region: loc.region,
       total: C().zombie.loopMin, progress: 0, event: null, mistake: null, driverId: d.id, startedAt: state.minute
     };
     state.locationId = null;
@@ -253,25 +253,32 @@ LS.Travel = (function () {
       LS.State.addLog(state, `${LS.Rules.josa(t.name, '으로')} 돌아왔다`, true, 'travel', '무리는 흩어졌다 · 하던 일은 그대로 남아 있다');
       return [{ stop: true, toast: `${LS.Rules.josa(t.name, '으로')} 돌아왔다. 무리는 흩어졌다.` }];
     }
-    const loc = LS.LOCATIONS[t.to];
-    state.locationId = t.to;
+    state.routes[t.key].traveled = true;
+    state.travel = null;
+    return landAt(state, t.to);
+  }
+
+  // 장소에 도착했을 때의 공통 처리 (개발용 장소 이동도 이것을 쓴다)
+  function landAt(state, toId) {
+    const loc = LS.LOCATIONS[toId];
+    state.locationId = toId;
     state.travel = null;
     state.bus.engineOn = false;
     LS.Zombie.beginStop(state);
-    state.routes[t.key].traveled = true;
-    state.places[t.to].visited = true;
+    state.places[toId].visited = true;
     state.screen = 'outside';
     LS.State.addLog(state, `도착: ${loc.name}`, true, 'travel', '엔진을 껐다. 건물을 눌러 정찰·파밍을 배정할 수 있다.');
     const out = [{ stop: true, toast: `도착: ${loc.name}` }];
-    if (loc.exit) out.push({ dialog: gateEvent() });
+    if (loc.exit) out.push({ dialog: gateEvent(loc) });
     // 첫 동료 분기: 처음 들른 쪽에서 만나고, 나중에 다른 쪽에 가면 이미 떠난 뒤다
-    const fc = LS.FIRST_COMPANION[t.to];
-    if (fc && !state.flags['companionSeen_' + t.to]) {
-      state.flags['companionSeen_' + t.to] = true;
+    const fc = LS.FIRST_COMPANION[toId];
+    if (fc && !state.flags['companionSeen_' + toId]) {
+      state.flags['companionSeen_' + toId] = true;
       if (!state.flags.firstCompanion) { state.flags.firstCompanion = fc.id; out.push({ dialog: fc.meet }); }
       else out.push({ dialog: fc.gone });
     }
     LS.People.onStop(state, out);   // 임시 동행 목적지, 합류 조건 하차, 이 장소의 생존자
+    if (LS.Factions && LS.Factions.onArrive) LS.Factions.onArrive(state, out);   // 대피소·바리케이드 등 장소 사건 (5단계)
     return out;
   }
 
@@ -381,14 +388,16 @@ LS.Travel = (function () {
     };
   }
 
-  function gateEvent() {
+  // 아직 열리지 않은 다음 지역의 입구
+  function gateEvent(loc) {
+    const reg = LS.REGIONS[loc.region].name;
     return {
-      title: '주거 지역 입구',
+      title: loc.name,
       lines: [
-        { speaker: 'narration', text: '도시 외곽의 끝. 이 너머가 주거 지역이다.' },
-        { speaker: 'park_seoyun', text: '여기서부터는 사람이 더 많았던 곳이에요. 좀비도요.' }
+        { speaker: 'narration', text: `${reg}으로 들어가는 길목이다. 멀리 연기가 오른다.` },
+        { speaker: 'yoon_jaeha', text: '여기서부터는 또 다른 동네야. 준비하고 들어가자.' }
       ],
-      observations: ['지금 시험판은 도시 외곽까지예요.', '주거 지역은 이후 단계에서 열립니다.'],
+      observations: [`지금 시험판은 여기까지예요. ${reg}은 다음 업데이트에서 열립니다.`],
       choices: [{ label: '주변을 둘러본다' }]
     };
   }
@@ -396,11 +405,12 @@ LS.Travel = (function () {
   function position(state) {
     const t = state.travel;
     if (!t) return null;
-    if (t.loop) return t.mapPos;
-    const a = LS.LOCATIONS[t.from].map;
-    const b = LS.LOCATIONS[t.to].map;
+    if (t.loop) return Object.assign({ region: t.region }, t.mapPos);
+    const reg = LS.World.routeRegion(t.from, t.to);
+    const a = LS.World.mapPos(t.from, reg);
+    const b = LS.World.mapPos(t.to, reg);
     const f = t.total ? t.progress / t.total : 0;
-    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, region: reg };
   }
 
   // 동승자 휴식: 환자용 침상은 식중독·HP 낮은 사람 → 기력 낮은 사람 순 (시간당 +2, 100까지), 나머지는 좌석(+1, 80까지)
@@ -426,5 +436,5 @@ LS.Travel = (function () {
     });
   }
 
-  return { options, plan, depart, departBlockReason, drivers, etaMinutes, nextMilestone, advance, position, speed, passengerRest, restKind, departLoop, loopBlock, locName };
+  return { options, plan, depart, departBlockReason, drivers, etaMinutes, nextMilestone, advance, position, speed, passengerRest, restKind, departLoop, loopBlock, locName, landAt };
 })();

@@ -37,10 +37,11 @@ LS.Panel = (function () {
   function excludeReason(type, m, key) {
     if (m.task) return '작업 중';
     const d = LS.Tasks.DEF[type];
-    if (m.temp && !d.isSleep) return '임시 동행';
+    const fights = key && key.indexOf('clear:') === 0;   // 잠자리 건물 안의 좀비 처리는 싸울 수 있어야 한다
+    if (m.temp && (!d.isSleep || fights)) return '임시 동행';
+    if (LS.CHARACTERS[m.id].child && (!d.isSleep || fights)) return '아이';
     const inf = R().infectionStage(state, m);
     if (inf === '악화' && !d.isSleep) return '감염 악화';
-    const fights = key && key.indexOf('clear:') === 0;   // 잠자리 건물 안의 좀비 처리는 싸울 수 있어야 한다
     if (fights && !R().canHeavy(state, m)) return m.energy <= LS.CONFIG.energy.heavyMin ? '기력 30 이하' : '싸울 수 없음';
     if (fights && !R().canOutside(state, m)) return R().isPoisoned(state, m) ? '식중독' : inf ? '감염' : 'HP 낮음';
     if (d.heavy && !R().canHeavy(state, m)) return m.energy <= LS.CONFIG.energy.heavyMin ? '기력 30 이하' : 'HP 낮음';

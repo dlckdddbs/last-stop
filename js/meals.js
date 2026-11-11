@@ -100,6 +100,12 @@ LS.Meals = (function () {
       LS.State.addLog(state, `식중독: ${who}`, true, 'body', `HP -10 · ${poisonHours(state)}시간 동안 외부 작업 불가 · 기력 회복 절반${hasMedic(state) ? ' · 간호사가 돌봐서 빨리 낫는다' : ''}`);
       out.push({ stop: true, toast: `식중독: ${who} (HP -10, ${poisonHours(state)}시간 외부 작업 불가)`, important: true });
     }
+    // 합류 조건: 하루 두 끼 정상 배급 (김나래)
+    if (key !== 'normal') {
+      state.crew.filter((m) => LS.CHARACTERS[m.id].condition === 'twoMeals').forEach((m) => {
+        out.push(...LS.People.violation(state, m.id, key === 'half' ? '반 배급을 했다' : '끼니를 걸렀다'));
+      });
+    }
     return out;
   }
 

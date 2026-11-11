@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 임시 초상: 정민경 (하율 엄마) -->
+  <rect width="256" height="256" fill="#2a3032"/>
+  <path d="M28 256 C34 188 82 164 128 164 C174 164 222 188 228 256 Z" fill="#7a6a8a"/>
+  <rect x="112" y="140" width="32" height="30" fill="#dcb294"/>
+  <ellipse cx="128" cy="106" rx="44" ry="50" fill="#dcb294"/>
+  <path d="M80 120 C74 60 104 46 128 46 C154 46 184 60 176 120 C170 90 156 74 128 72 C100 74 86 90 80 120 Z" fill="#2b2420"/>
+  <ellipse cx="110" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <ellipse cx="146" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <path d="M114 136 Q128 142 142 136" stroke="#8a5a48" stroke-width="4" fill="none"/>
+  <text x="18" y="38" font-family="Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#cbb6e6">정</text>
+</svg>

@@ -27,6 +27,10 @@ LS.ASSETS = {
     lee_junghoon: 'images/portraits/lee_junghoon.svg',
     go_mansik: 'images/portraits/go_mansik.svg',
     go_mansu: 'images/portraits/go_mansu.svg',
+    kim_narae: 'images/portraits/kim_narae.svg',
+    jung_minkyung: 'images/portraits/jung_minkyung.svg',
+    jung_hayul: 'images/portraits/jung_hayul.svg',
+    seo_dongjin: 'images/portraits/seo_dongjin.svg',
     radio: 'images/portraits/radio.svg'
   },
   icons: {

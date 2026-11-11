@@ -73,13 +73,16 @@ LS.World = (function () {
       const a = LS.LOCATIONS[rs.from];
       const b = LS.LOCATIONS[rs.to];
       const t = rs.total ? rs.progress / rs.total : 0;
+      const reg = routeRegion(rs.from, rs.to);
+      const pa = mapPos(rs.from, reg);
+      const pb = mapPos(rs.to, reg);
       return {
         id: 'roadside',
         name: `도로 위 (${a.name} → ${b.name})`,
-        region: a.region,
+        region: reg,
         bg: 'street',
         roadside: true,
-        map: { x: a.map.x + (b.map.x - a.map.x) * t, y: a.map.y + (b.map.y - a.map.y) * t },
+        map: { x: pa.x + (pb.x - pa.x) * t, y: pa.y + (pb.y - pa.y) * t },
         spots: rs.spots
       };
     }
@@ -87,10 +90,37 @@ LS.World = (function () {
     return loc ? Object.assign({ id }, loc) : null;
   }
 
-  function routesFrom(id) {
-    return LS.ROUTES.filter((r) => r.a === id || r.b === id).map((r) => ({
+  // 길 상태: 숨은 길은 드러나기 전엔 없고, 다리처럼 닫히는 길은 닫힌 뒤 지날 수 없다 (05장)
+  function routeOpen(state, r) {
+    if (r.hidden && !(state && state.flags.bridgeClosed)) return false;
+    if (r.closesDay && state && state.flags.bridgeClosed) return false;
+    return true;
+  }
+  function routeVisible(state, r) { return !(r.hidden && !(state && state.flags.bridgeClosed)); }
+
+  function routesFrom(id, state) {
+    return LS.ROUTES.filter((r) => (r.a === id || r.b === id) && routeOpen(state, r)).map((r) => ({
       to: r.a === id ? r.b : r.a, hours: r.hours, key: routeKey(r.a, r.b), road: r.road
     }));
+  }
+
+  // ---------- 지역별 지도 ----------
+  // 길이 그려지는 지역: 같은 지역이면 그 지역, 경계 장소(alt)가 끼면 그쪽 지역
+  function routeRegion(a, b) {
+    const A = LS.LOCATIONS[a];
+    const B = LS.LOCATIONS[b];
+    if (!A || !B) return (A || B || {}).region;
+    if (A.region === B.region) return A.region;
+    if (A.alt && A.alt[B.region]) return B.region;
+    if (B.alt && B.alt[A.region]) return A.region;
+    return A.region;
+  }
+  // 그 지역 지도에서의 좌표
+  function mapPos(id, region) {
+    const L = LS.LOCATIONS[id];
+    if (!L) return { x: 0, y: 0 };
+    if (!region || L.region === region) return L.map;
+    return (L.alt && L.alt[region]) || L.map;
   }
 
   function route(a, b) { return LS.ROUTES.find((r) => routeKey(r.a, r.b) === routeKey(a, b)); }
@@ -155,7 +185,7 @@ LS.World = (function () {
   }
 
   return {
-    routeKey, generate, makeRoadside, location, routesFrom, route, eventChance,
+    routeKey, generate, makeRoadside, location, routesFrom, route, eventChance, routeRegion, mapPos, routeOpen, routeVisible,
     lootRangeText, remainingText, supplyHint, buildingHint, isEmpty, visibleSpots
   };
 })();

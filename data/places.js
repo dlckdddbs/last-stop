@@ -34,6 +34,17 @@ LS.SPOT_TYPES = {
     name: '주유소', hours: 3, crew: 2,
     loot: { fuel: [2.5, 4] }
   },
+  // 주거 지역 (5단계, 05장 장소 유형: 학교·아파트). 수치는 임시값
+  school: {
+    name: '학교', hours: 3, crew: 2,
+    loot: { food: [6, 10], meds: [0, 1] },
+    freshRatio: 0.2
+  },
+  apartment: {
+    name: '아파트', hours: 4, crew: 2,
+    loot: { food: [8, 14], parts: [0, 2] },
+    freshRatio: 0.3
+  },
   // 잠자리 건물 (2026-11-10): 파밍 건물과 따로, 장소마다 있을 수도 없을 수도 있다. 버스에서 걸어서 15~20분
   shelter: {
     name: '잠자리 건물', canRest: true

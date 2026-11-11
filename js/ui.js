@@ -192,44 +192,66 @@ LS.UI = (function () {
   }
 
   // ---------- 지도 ----------
+  // 지금 버스가 있는 지역 (지도는 지역마다 한 장. 경계 장소는 이웃 지역 지도에도 보인다)
+  let mapRegion = null;   // 지역 버튼으로 다른 지역을 보는 중이면 그 지역
+  function busRegion() {
+    if (state.travel) return LS.Travel.position(state).region;
+    const loc = LS.State.location(state);
+    if (loc && loc.exit && loc.alt) return Object.keys(loc.alt)[0];   // 아직 열리지 않은 지역의 입구는 들어온 쪽 지도에
+    return loc ? loc.region : 'outskirts';
+  }
+
   function sceneMap() {
     const here = state.locationId;
     const adjacent = new Set(state.travel ? [] : LS.Travel.options(state).map((o) => o.to));
+    const cur = busRegion();
+    const view = mapRegion || cur;
+    const W = LS.World;
     let svg = '<svg class="map-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet">';
     svg += '<rect width="1600" height="900" fill="#1a2027"/>';
-    svg += '<path d="M60 160 L1260 120 L1300 820 L80 860 Z" fill="#202b25" stroke="#2f4136" stroke-width="3"/>';
-    svg += '<path d="M1300 120 L1590 140 L1590 860 L1300 820 Z" fill="#232634" stroke="#363b52" stroke-width="3"/>';
-    svg += '<text x="110" y="210" class="map-region">도시 외곽</text><text x="1330" y="180" class="map-region">주거 지역</text>';
+    svg += `<path d="M60 120 L1540 100 L1560 840 L80 860 Z" class="map-land map-land-${view}"/>`;
+    svg += `<text x="110" y="180" class="map-region">${esc(LS.REGIONS[view].name)}</text>`;
     LS.ROUTES.forEach((r) => {
-      const a = LS.LOCATIONS[r.a].map;
-      const b = LS.LOCATIONS[r.b].map;
-      const info = state.routes[LS.World.routeKey(r.a, r.b)];
+      if (W.routeRegion(r.a, r.b) !== view || !W.routeVisible(state, r)) return;
+      const a = W.mapPos(r.a, view);
+      const b = W.mapPos(r.b, view);
+      const info = state.routes[W.routeKey(r.a, r.b)];
       const known = info.known || info.traveled;
-      svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="edge ${known ? 'known' : 'unknown'}"/>`;
-      svg += `<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 - 10}" class="edge-label">${r.hours}시간</text>`;
+      const closed = !W.routeOpen(state, r);
+      svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="edge ${closed ? 'closed' : known ? 'known' : 'unknown'} ${r.hidden ? 'hidden-road' : ''}"/>`;
+      svg += `<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 - 10}" class="edge-label">${closed ? '폐쇄' : r.hours + '시간'}${r.road !== '큰길' && !closed ? ' · ' + esc(r.road) : ''}</text>`;
     });
     Object.keys(LS.LOCATIONS).forEach((id) => {
       const loc = LS.LOCATIONS[id];
+      if (loc.region !== view && !(loc.alt && loc.alt[view])) return;
+      const p = W.mapPos(id, view);
       const pl = state.places[id];
-      const cls = ['node', here === id ? 'current' : '', adjacent.has(id) ? 'adjacent' : '', pl.visited ? 'visited' : '', loc.exit ? 'exit' : ''].join(' ');
+      const other = loc.region !== view;   // 이웃 지역으로 넘어가는 경계
+      const cls = ['node', here === id ? 'current' : '', adjacent.has(id) ? 'adjacent' : '', pl.visited ? 'visited' : '', loc.exit ? 'exit' : '', other ? 'border' : ''].join(' ');
       const fc = LS.FIRST_COMPANION[id];
       const clue = fc && !state.flags.firstCompanion && !state.flags['companionSeen_' + id];
-      svg += `<g class="${cls}" data-node="${id}"><circle cx="${loc.map.x}" cy="${loc.map.y}" r="20"/>` +
-        `<text x="${loc.map.x}" y="${loc.map.y + 48}">${esc(loc.name)}</text>` +
-        (clue ? `<text class="clue" x="${loc.map.x}" y="${loc.map.y + 78}">? ${esc(fc.short)}</text>` : '') + '</g>';
+      svg += `<g class="${cls}" data-node="${id}"><circle cx="${p.x}" cy="${p.y}" r="20"/>` +
+        `<text x="${p.x}" y="${p.y + 48}">${esc(loc.name)}${other ? ' →' : ''}</text>` +
+        (clue ? `<text class="clue" x="${p.x}" y="${p.y + 78}">? ${esc(fc.short)}</text>` : '') + '</g>';
     });
     let bus = null;
-    if (state.travel) bus = LS.Travel.position(state);
-    else if (here === 'roadside') bus = LS.State.location(state).map;
-    else if (here && LS.LOCATIONS[here]) bus = LS.LOCATIONS[here].map;
+    if (view === cur) {
+      if (state.travel) bus = LS.Travel.position(state);
+      else if (here === 'roadside') bus = LS.State.location(state).map;
+      else if (here && LS.LOCATIONS[here]) bus = W.mapPos(here, cur);
+    }
     if (bus) svg += `<g class="bus-marker"><rect x="${bus.x - 26}" y="${bus.y - 58}" width="52" height="24" rx="6"/><text x="${bus.x}" y="${bus.y - 41}">버스</text></g>`;
     svg += '</svg>';
+    // 가 본 지역끼리 지도를 넘겨 볼 수 있다
+    const seen = ['outskirts', 'residential', 'downtown', 'military', 'airport'].filter((rg) => rg === cur || Object.keys(LS.LOCATIONS).some((id) => LS.LOCATIONS[id].region === rg && state.places[id].visited));
+    const tabs = seen.length > 1 ? '<div class="map-regions">' + seen.map((rg) => `<button class="mini ${rg === view ? 'on' : ''}" data-ui="mapregion" data-region="${rg}">${esc(LS.REGIONS[rg].name)}${rg === cur ? ' (버스)' : ''}</button>`).join('') + '</div>' : '';
     // 전체 지도는 접어 두고, 누르면 펼친다 (지역 지도를 가리지 않게)
+    // 범례도 전체 지도 상자 안에 (지도 아래쪽 장소를 가리지 않게)
     const inset = minimapOpen
-      ? `<div class="map-inset open"><button class="mini" data-ui="minimap">전체 지도 ▴ 접기</button><img src="${A().map}" alt=""><span>지금은 도시 외곽${state.flags.airportKnown ? ' · 공항 위치 확인' : ''}</span></div>`
-      : '<div class="map-inset"><button class="mini" data-ui="minimap">전체 지도 ▾</button></div>';
-    return svg + inset +
-      '<div class="scene-note bottom">장소를 누르면 이동 시간·연료·도로 정보를 볼 수 있어요. 점선은 미확인 큰길(도로 사건 40%), 실선은 확인한 길(20%).</div>';
+      ? `<div class="map-inset open"><button class="mini" data-ui="minimap">전체 지도·범례 ▴ 접기</button><img src="${A().map}" alt=""><span>지금은 ${esc(LS.REGIONS[cur].name)}${state.flags.airportKnown ? ' · 공항 위치 확인' : ''}</span>` +
+        '<span class="map-legend">장소를 누르면 이동 시간·연료·도로 정보가 나와요. 점선: 미확인 큰길(도로 사건 40%) · 실선: 확인한 길(20%) · 붉은 점선: 폐쇄 · →: 다음 지역</span></div>'
+      : '<div class="map-inset"><button class="mini" data-ui="minimap">전체 지도·범례 ▾</button></div>';
+    return svg + tabs + inset;
   }
 
   // ---------- 이동 ----------
@@ -291,7 +313,7 @@ LS.UI = (function () {
       return `<button class="crew-card ${selected === m.id ? 'selected' : ''} ${isOutside(m) ? 'away' : ''}" data-crew="${m.id}">` +
         (free ? '<span class="crew-badge" title="이곳에 아직 맡길 만한 일이 있어요 (정찰·확인·파밍 등)">! 할 일</span>' : '') +
         `<img src="${A().portraits[m.id]}" alt="">` +
-        `<div class="crew-info"><div class="crew-name">${esc(c.name)}${sick ? ' <small class="sick">식중독</small>' : ''}${infectTag(m)}${m.temp ? ` <small class="temp-tag">임시·${esc(m.temp.dest === 'next' ? '다음 마을' : LS.Travel.locName(m.temp.dest))}</small>` : ''}</div>` +
+        `<div class="crew-info"><div class="crew-name">${esc(c.name)}${sick ? ' <small class="sick">식중독</small>' : ''}${infectTag(m)}${m.temp ? ` <small class="temp-tag">임시·${esc(m.temp.dest === 'next' ? '다음 마을' : LS.Travel.locName(m.temp.dest))}</small>` : ''}${c.child ? ' <small class="temp-tag">아이</small>' : ''}</div>` +
         `<div class="crew-role">${esc(LS.Tasks.labelFor(state, m))}</div>` +
         `<div class="crew-bars"><span>HP</span><div class="bar"><div class="hp" style="width:${m.hp}%"></div></div>` +
         `<span>기력</span><div class="bar"><div class="energy" style="width:${m.energy}%"></div></div>` +
@@ -369,6 +391,7 @@ LS.UI = (function () {
 
   function setScreen(id) {
     state.screen = id;
+    mapRegion = null;   // 지도를 다시 열면 버스가 있는 지역부터
     LS.Panel.close();
     renderTabs();
     renderScene();
@@ -417,6 +440,7 @@ LS.UI = (function () {
       if (kind === 'screen') setScreen(ui.dataset.screen);
       else if (kind === 'engine') toggleEngine();
       else if (kind === 'minimap') { minimapOpen = !minimapOpen; renderScene(); }
+      else if (kind === 'mapregion') { mapRegion = ui.dataset.region === busRegion() ? null : ui.dataset.region; renderScene(); }
       else LS.Panel.open(kind);
     });
     $('tb-bus').addEventListener('click', (e) => { if (e.target.closest('[data-ui="engine"]')) toggleEngine(); });

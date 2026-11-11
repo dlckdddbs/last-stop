@@ -66,6 +66,63 @@ LS.ENCOUNTERS = {
   }
 };
 
+// ---------- 주거 지역 (5단계, 16~17장 인물 목록) ----------
+Object.assign(LS.ENCOUNTERS, {
+  // 김나래 · 배달 경험/상인 · 주거 편의점 · "먼저 동행 요청"
+  kim_narae: {
+    who: ['kim_narae'], kind: 'join', where: 'res_conv', pos: { x: 38, y: 66 },
+    title: '먼저 손을 든 사람',
+    purpose: '공항까지 같이 가고 싶어 한다. 길 안내를 하겠다고 한다',
+    condition: '하루 두 끼 정상 배급 (반 배급·거르기를 하면 위반)',
+    intro: [
+      { speaker: 'narration', text: '편의점 앞, 배달 가방을 멘 여자가 버스를 보자마자 달려온다.' },
+      { speaker: 'kim_narae', text: '공항 가요? 저 이 동네 골목 다 알아요. 배달만 오 년 했거든요. 대신… 밥은 하루 두 끼 꼭 먹고요.' }
+    ],
+    observed: ['배달 가방에 지도와 볼펜', '손에 굳은살. 상처는 없어 보인다', '먼저 동행을 청했다'],
+    opinion: { speaker: 'park_seoyun', text: '길 아는 사람은 귀하죠. 두 끼 조건은 식량을 보고 정해요.' },
+    interview: ['동생이 이 근처 아파트에 살았다고 한다. 확인하고 싶어 한다 (부탁은 다음 업데이트)', '골목과 뒷길 이야기가 구체적이다. 말에 앞뒤가 맞는다'],
+    inspect: { results: ['배달 가방: 지도, 볼펜, 빈 물병', '상처나 물린 자국은 없다'], grumble: '"까다롭네요." 하면서도 순순히 보여 준다' },
+    acceptLine: '좋아요! 지름길은 저한테 맡겨요.'
+  },
+  // 정민경·정하율 · 부모·아이 · 주거 아파트 · 좌석 2개 · 가족을 분리하지 않음 (22장 ③ 만석의 가족)
+  jung_family: {
+    who: ['jung_minkyung', 'jung_hayul'], kind: 'join', where: 'res_apart', pos: { x: 34, y: 68 },
+    title: '아파트의 엄마와 아이',
+    purpose: '아이와 함께 공항까지 가고 싶어 한다',
+    condition: '가족을 떼어 놓지 않는다 (좌석 2개가 같이 필요하다)',
+    intro: [
+      { speaker: 'narration', text: '아파트 현관에서 여자가 아이 손을 꼭 잡고 나온다. 아이는 버스를 신기하게 올려다본다.' },
+      { speaker: 'jung_minkyung', text: '둘이 같이 타야 해요. 하율이랑 떨어지는 건 안 돼요. 짐은 거의 없어요.' },
+      { speaker: 'jung_hayul', text: '버스 크다…' }
+    ],
+    observed: ['좌석 2개가 함께 필요하다', '아이는 일을 할 수 없다. 식량은 둘 몫이 든다', '엄마의 소매에 피가 묻었다 — 자기 피일까?'],
+    opinion: { speaker: 'park_seoyun', text: '아이를 두고 갈 순 없잖아요… 그래도 식량은 계산해 봐야 해요.' },
+    interview: ['남편은 사흘 전 물을 구하러 나가 돌아오지 않았다고 한다', '아이 이야기를 할 때 목소리가 떨린다. 말에 앞뒤는 맞는다'],
+    inspect: {
+      results: ['짐: 아이 옷, 약간의 빵, 가족사진'],
+      wound: { hero: '소매의 피는 아이가 넘어져 무릎이 까진 걸 닦은 자국이다. 둘 다 물린 자국은 없다', other: '물린 자국은 안 보이지만, 소매의 피가 어디서 났는지는 확실치 않다' },
+      grumble: '"아이는 무서워해요. 빨리 해 주세요."'
+    },
+    acceptLine: '고맙습니다… 하율아, 인사해.'
+  },
+  // 서동진 · 약사/의료 · 주거 약국
+  seo_dongjin: {
+    who: ['seo_dongjin'], kind: 'join', where: 'res_pharm', pos: { x: 40, y: 66 },
+    title: '약국의 약사',
+    purpose: '공항까지 같이 가고 싶어 한다',
+    condition: '없음',
+    intro: [
+      { speaker: 'narration', text: '셔터 내린 약국 안에서 안경 쓴 남자가 손전등을 깜빡인다.' },
+      { speaker: 'seo_dongjin', text: '약사입니다. 남은 약은 별로 없지만 뭘 써야 하는지는 알아요. 저도 공항까지 데려가 주시겠어요?' }
+    ],
+    observed: ['흰 가운에 이름표', '약 봉투 몇 개를 챙겼다', '합류를 원한다'],
+    opinion: { speaker: 'park_seoyun', text: '약 아는 사람이 있으면 다쳤을 때 마음이 놓이겠어요.' },
+    interview: ['억제제를 만드는 재료를 안다고 한다 (부탁은 다음 업데이트)', '약국을 지키다 혼자 남았다. 말에 앞뒤가 맞는다'],
+    inspect: { results: ['약 봉투: 해열제·소독약 조금', '상처나 물린 자국은 없다'], grumble: '"당연히 확인해야죠." 협조적이다' },
+    acceptLine: '고맙습니다. 약은 제가 정리할게요.'
+  }
+});
+
 LS.PEOPLE_RULES = {
   supportFood: 2,          // 물자만 나눠 줄 때 식량 (임시값)
   meetHours: [8, 19],      // 2~3일째 도로변 두 사람이 다가오는 시간대 (임시값)

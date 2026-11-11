@@ -78,9 +78,40 @@ LS.EVENTS = {
 };
 
 // 정해진 시각에 일어나는 사건 (게임 시작부터 경과한 분)
+// 21장 정기 방송 · 05장 다리 폐쇄 (D7 예고, D10 적용)
+LS.EVENTS.radio_d7 = {
+  title: '다리 폐쇄 예고',
+  screen: 'bus',
+  lines: [
+    { speaker: 'narration', text: '7일째 08시. 라디오가 지직거리다 또렷해진다.' },
+    { speaker: 'radio', text: '알립니다. 주거 지역 하천 다리는 감염 확산 차단을 위해 10일째 0시부로 폐쇄됩니다.' },
+    { speaker: 'radio', text: '이후 도심 방면은 하천 관리도로로 우회하십시오. 공항 검문소 위치는 변동 없습니다.' },
+    { speaker: 'park_seoyun', text: '3일 남았어요. 다리로 갈지, 돌아갈 각오를 할지 정해야 해요.' }
+  ],
+  observations: [
+    '10일째 0시부터 하천 다리 폐쇄 (도심 입구로 가는 지름길)',
+    '늦으면 자급 마을 쪽 하천 관리도로로 돌아간다 (약 9시간)',
+    '도심은 다음 업데이트에서 열립니다'
+  ],
+  choices: [{ label: '지도를 확인한다', result: { log: '다리 폐쇄 예고를 들었다', goto: 'map' } }]
+};
+
+LS.EVENTS.bridge_closed = {
+  title: '다리 폐쇄',
+  screen: 'map',
+  lines: [
+    { speaker: 'radio', text: '10일째 0시. 하천 다리가 폐쇄되었습니다. 접근하지 마십시오.' },
+    { speaker: 'narration', text: '지도 위 다리 길에 붉은 줄이 그어졌다. 대신 하천 관리도로가 열렸다.' }
+  ],
+  observations: ['하천 다리 → 도심 입구 길이 닫혔다', '자급 마을 → 도심 입구: 하천 관리도로 9시간 (숨은 길)'],
+  choices: [{ label: '알았다', result: { log: '하천 다리가 닫히고 하천 관리도로가 열렸다', flags: { bridgeClosed: true } } }]
+};
+
 LS.SCHEDULE = [
   { at: 6 * 60, event: 'prologue' },     // 1일째 06시(낮)에 시작
-  { at: 8 * 60, event: 'radio_d1' }
+  { at: 8 * 60, event: 'radio_d1' },
+  { at: 6 * 1440 + 8 * 60, event: 'radio_d7' },
+  { at: 9 * 1440, event: 'bridge_closed' }
 ];
 
 // 첫 동료 분기 (2026-11-10 결정): 소방서에서 처음 들른 곳에서 한 명을 만나고, 다른 쪽 사람은 떠난다.

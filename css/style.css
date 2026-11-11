@@ -551,3 +551,27 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 .temp-tag { color: #9fc4e6; font-size: 10px; }
 .person-decide { flex-direction: row; }
 .person-decide button { flex: 1; text-align: center; padding: 6px 4px; }
+
+/* ---------- 지역별 지도 (5단계) ---------- */
+.map-svg .map-land { stroke-width: 3; }
+.map-svg .map-land-outskirts { fill: #202b25; stroke: #2f4136; }
+.map-svg .map-land-residential { fill: #232634; stroke: #363b52; }
+.map-svg .map-land-downtown { fill: #2a2424; stroke: #4a3636; }
+.map-svg .map-land-military { fill: #262a20; stroke: #40462f; }
+.map-svg .map-land-airport { fill: #20282e; stroke: #34444f; }
+.map-svg .edge.closed { stroke: #8a3a3a; stroke-dasharray: 4 10; }
+.map-svg .edge.hidden-road { stroke: #6f86a8; stroke-dasharray: 18 8; }
+.map-svg .node.border circle { stroke-dasharray: 6 4; }
+.map-regions { position: absolute; left: 12px; top: 12px; display: flex; gap: 4px; z-index: 3; }
+.map-legend { display: block; margin-top: 4px; line-height: 1.5; color: #c6ccd2; }
+
+/* 개발 도구 (?dev=1) */
+#devtoggle { position: fixed; left: 8px; bottom: 8px; z-index: 9000; font-size: 12px; padding: 4px 10px; background: #5a3d7a; color: #fff; border: 1px solid #8a6aaa; border-radius: 4px; cursor: pointer; }
+#devbox { position: fixed; left: 8px; bottom: 40px; z-index: 9000; width: 330px; padding: 10px; background: #1d1a24; color: #e6e2ee; border: 1px solid #5a3d7a; border-radius: 6px; font-size: 12px; display: grid; gap: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+#devbox.hidden { display: none; }
+#devbox .dev-head { font-weight: bold; }
+#devbox .dev-head small { font-weight: normal; color: #a99bbf; }
+#devbox input[type=number] { width: 44px; }
+#devbox select { max-width: 200px; }
+#devbox .dev-row { display: flex; flex-wrap: wrap; gap: 4px; }
+#devbox button { font-size: 12px; padding: 2px 8px; cursor: pointer; }

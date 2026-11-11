@@ -272,7 +272,7 @@ LS.Zombie = (function () {
 
   // ---------- 30분 전 (직접 관측) ----------
   function fighters(state) {
-    return busCrew(state).filter((m) => !m.temp && R().canHeavy(state, m) && R().canOutside(state, m));   // 임시 동행은 싸우지 않는다
+    return busCrew(state).filter((m) => !m.temp && !LS.CHARACTERS[m.id].child && R().canHeavy(state, m) && R().canOutside(state, m));   // 임시 동행·아이는 싸우지 않는다
   }
 
   function fightChoice(state, h) {

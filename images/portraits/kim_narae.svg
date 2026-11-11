@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 임시 초상: 김나래 (배달 경험) -->
+  <rect width="256" height="256" fill="#2c2a36"/>
+  <path d="M28 256 C34 188 82 164 128 164 C174 164 222 188 228 256 Z" fill="#c0633a"/>
+  <rect x="112" y="140" width="32" height="30" fill="#ddb08e"/>
+  <ellipse cx="128" cy="106" rx="44" ry="50" fill="#ddb08e"/>
+  <path d="M82 112 C76 60 104 44 128 44 C154 44 182 60 174 112 C170 88 160 72 128 70 C100 72 88 88 82 112 Z" fill="#4a2a1e"/><rect x="74" y="74" width="108" height="16" rx="8" fill="#c0633a"/>
+  <ellipse cx="110" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <ellipse cx="146" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <path d="M114 136 Q128 142 142 136" stroke="#8a5a48" stroke-width="4" fill="none"/>
+  <text x="18" y="38" font-family="Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#f0a37a">김</text>
+</svg>
