@@ -136,6 +136,14 @@ LS.UI = (function () {
         work.map((t) => `<span class="spot-work">${esc(t.members.map((id) => R().name(id)).join('·'))} · ${esc(LS.Tasks.labelFor(state, R().member(state, t.members[0])))}</span>`).join('') +
         '</button>';
     });
+    // 태워 달라는 사람 (✋, 17장)
+    LS.People.present(state).forEach((id, i) => {
+      const e = LS.ENCOUNTERS[id];
+      const pos = e.pos || { x: 30 + i * 12, y: 70 };
+      const talking = state.tasks.some((t) => t.person === id);
+      html += `<button class="person-mark ${talking ? 'busy' : ''}" data-person="${id}" style="left:${pos.x}%;top:${pos.y}%">` +
+        `<b>✋ ${esc(e.who.map((c) => R().name(c)).join('·'))}</b><small>${esc(e.kind === 'join' ? '함께 가고 싶어 한다' : e.destText + '까지 태워 달라고 한다')}${talking ? ' · 확인하는 중' : ''}</small></button>`;
+    });
     const camping = state.tasks.filter((t) => t.type === 'camp' || t.type === 'watch');
     if (camping.length) {
       html += '<div class="camp-mark">' + camping.map((t) => `${t.type === 'camp' ? '침낭' : '경계'}: ${esc(t.members.map((id) => R().name(id)).join('·'))} (${R().hoursLabel(LS.Tasks.eta(state, t))})`).join(' · ') + '</div>';
@@ -283,7 +291,7 @@ LS.UI = (function () {
       return `<button class="crew-card ${selected === m.id ? 'selected' : ''} ${isOutside(m) ? 'away' : ''}" data-crew="${m.id}">` +
         (free ? '<span class="crew-badge" title="이곳에 아직 맡길 만한 일이 있어요 (정찰·확인·파밍 등)">! 할 일</span>' : '') +
         `<img src="${A().portraits[m.id]}" alt="">` +
-        `<div class="crew-info"><div class="crew-name">${esc(c.name)}${sick ? ' <small class="sick">식중독</small>' : ''}${infectTag(m)}</div>` +
+        `<div class="crew-info"><div class="crew-name">${esc(c.name)}${sick ? ' <small class="sick">식중독</small>' : ''}${infectTag(m)}${m.temp ? ` <small class="temp-tag">임시·${esc(m.temp.dest === 'next' ? '다음 마을' : LS.Travel.locName(m.temp.dest))}</small>` : ''}</div>` +
         `<div class="crew-role">${esc(LS.Tasks.labelFor(state, m))}</div>` +
         `<div class="crew-bars"><span>HP</span><div class="bar"><div class="hp" style="width:${m.hp}%"></div></div>` +
         `<span>기력</span><div class="bar"><div class="energy" style="width:${m.energy}%"></div></div>` +
@@ -397,6 +405,8 @@ LS.UI = (function () {
       if (state.dialogOpen) return;
       const crew = e.target.closest('[data-crew]');
       if (crew) { LS.Panel.open('crew', crew.dataset.crew); renderCrew(); return; }
+      const person = e.target.closest('[data-person]');
+      if (person) { LS.Panel.open('person', person.dataset.person); return; }
       const spot = e.target.closest('[data-spot]');
       if (spot) { LS.Panel.open('spot', spot.dataset.spot); return; }
       const node = e.target.closest('[data-node]');

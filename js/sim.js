@@ -37,10 +37,14 @@ LS.Sim = (function () {
 
     // 작업 (경계 인원은 구간 시작 기준으로 센다)
     LS.Tasks.beginStep(state);
+    LS.People.beginStep(state);
     state.tasks.slice().forEach((t) => { if (state.tasks.includes(t)) out.push(...LS.Tasks.advance(state, t, prev, next)); });
 
     // 좀비: 정차 판정·무리 접근·포위·감염 시계 (14~15장, 12장)
     out.push(...LS.Zombie.advance(state, prev, next));
+
+    // 사람: 2~3일째 도로변의 두 사람, 도둑 (16~17장, 22장)
+    out.push(...LS.People.advance(state, prev, next));
 
     // 식중독 회복
     state.crew.forEach((m) => {

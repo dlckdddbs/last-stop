@@ -37,6 +37,7 @@ LS.Panel = (function () {
   function excludeReason(type, m, key) {
     if (m.task) return '작업 중';
     const d = LS.Tasks.DEF[type];
+    if (m.temp && !d.isSleep) return '임시 동행';
     const inf = R().infectionStage(state, m);
     if (inf === '악화' && !d.isSleep) return '감염 악화';
     const fights = key && key.indexOf('clear:') === 0;   // 잠자리 건물 안의 좀비 처리는 싸울 수 있어야 한다
@@ -157,7 +158,7 @@ LS.Panel = (function () {
       (info.length ? `<div class="act-info">${info.join(' · ')}</div>` : '') + warn +
       (p.reason ? `<div class="act-reason">${esc(p.reason)}</div>` : '') +
       `<button class="act-go" data-act="start" data-key="${esc(key)}" data-type="${type}"` +
-      `${opts.spotId ? ` data-spot="${opts.spotId}"` : ''}${opts.routeKey ? ` data-route="${opts.routeKey}"` : ''}${opts.clear ? ' data-clear="1"' : ''} ${p.reason ? 'disabled' : ''}>시작</button></div>`;
+      `${opts.spotId ? ` data-spot="${opts.spotId}"` : ''}${opts.routeKey ? ` data-route="${opts.routeKey}"` : ''}${opts.clear ? ' data-clear="1"' : ''}${opts.person ? ` data-person="${opts.person}"` : ''} ${p.reason ? 'disabled' : ''}>시작</button></div>`;
   }
 
   function runningTasks(filter) {
@@ -331,6 +332,14 @@ LS.Panel = (function () {
     if (p.driver && p.driverEnergyAfter != null && p.driverEnergyAfter <= LS.CONFIG.driver.minEnergy) {
       rows.push(`<b class="warn-text">운전자 기력이 도중에 30에 닿는다 (교대나 정차 필요)</b>`);
     }
+    // 한정수 합류 조건: 하루 운전 8시간
+    if (p.driver && LS.CHARACTERS[p.driver.id].condition === 'drive8') {
+      const done = LS.People.drivenToday(state, p.driver);
+      const limit = LS.PEOPLE_RULES.driveLimitMin;
+      rows.push(done + p.minutes > limit
+        ? `<b class="warn-text">${esc(R().name(p.driver.id))} 합류 조건: 하루 운전 8시간 — 오늘 ${hoursLabel(done)} 운전, 이번에 넘긴다</b>`
+        : `${esc(R().name(p.driver.id))} 합류 조건: 하루 운전 8시간 (오늘 ${hoursLabel(done)} 운전)`);
+    }
     html += `<div class="pn-rows">${rows.map((r) => `<div>${r}</div>`).join('')}</div>`;
     const canD = state.crew.filter((m) => R().canDrive(state, m) && !m.task);
     const noD = state.crew.filter((m) => !canD.includes(m)).map((m) => `${R().name(m.id)} (${m.task ? '작업 중' : R().driveBlockReason(state, m)})`);
@@ -415,7 +424,36 @@ LS.Panel = (function () {
     return html;
   }
 
-  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp, repair: buildRepair, siege: buildSiege };
+  // ---------- 만난 사람 (17장): 관찰·상의·면담·검사 결과를 보고 태울지 정한다 ----------
+  function buildPerson(id) {
+    const e = LS.ENCOUNTERS[id];
+    const r = state.people[id];
+    if (!e || !r || r.status !== 'met' || r.at !== state.locationId) return null;
+    const free = LS.People.seatsFree(state);
+    const need = e.who.length;
+    let html = `<div class="pn-title">${esc(e.who.map((c) => R().name(c)).join('·'))}</div><div class="pn-sub">${esc(LS.People.kindText(e))}</div>`;
+    html += '<div class="person-faces">' + e.who.map((c) => `<img src="${LS.ASSETS.portraits[c]}" alt="">`).join('') + '</div>';
+    html += guideCard('people');
+    html += `<div class="pn-rows"><div>목적: ${esc(e.purpose)}</div><div>합류 조건: ${esc(e.condition)}</div><div>좌석 ${state.crew.length}/${state.bus.seats}${free < need ? ' · <b class="warn-text">만석</b>' : ` · ${need}자리 필요`}</div></div>`;
+    html += '<div class="act-sub">보이는 것</div><ul class="person-list">' + e.observed.map((t) => `<li>${esc(t)}</li>`).join('') + '</ul>';
+    html += '<div class="act-sub">면담·검사로 알게 된 것</div>' + (r.clues.length
+      ? '<ul class="person-list clues">' + r.clues.map((t) => `<li>${esc(t)}</li>`).join('') + '</ul>'
+      : '<div class="pn-info dim">아직 없어요. 판단은 직접 해야 해요.</div>');
+    const food = LS.State.foodTotal(state);
+    const S = LS.PEOPLE_RULES.supportFood;
+    // 결정 버튼은 정보 바로 아래에 (면담·검사 블록 아래로 내려가 스크롤하지 않게)
+    html += '<div class="person-decide">' +
+      `<button class="act-go" data-act="person" data-do="accept" data-id="${id}" ${free < need ? 'disabled' : ''}>태운다<small>${e.kind === 'join' ? '동료로 공항까지' : esc(e.destText) + '까지'}</small></button>` +
+      `<button data-act="person" data-do="support" data-id="${id}" ${food < S ? 'disabled' : ''}>물자만<small>식량 ${S}인분</small></button>` +
+      `<button data-act="person" data-do="refuse" data-id="${id}">거절<small>평판 변화 없음</small></button></div>`;
+    html += runningTasks((t) => t.person === id);
+    if (!r.interviewed) html += actionBlock('iv:' + id, 'interview', '면담 (1시간)', { person: id });
+    if (!r.inspected) html += actionBlock('in:' + id, 'inspect', '검사 (1시간)', { person: id });
+    html += '<div class="pn-info dim">정하지 않고 떠나면 두고 가요.</div>';
+    return html;
+  }
+
+  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp, repair: buildRepair, siege: buildSiege, person: buildPerson };
 
   function render() {
     const box = $('panel');
@@ -452,6 +490,12 @@ LS.Panel = (function () {
       if (act === 'toggle') { toggle(b.dataset.key, b.dataset.id, Number(b.dataset.max)); render(); return; }
       if (act === 'hours') { hours[b.dataset.key] = parseFloat(b.dataset.h); render(); return; }
       if (act === 'clearsleep') { clearSleep[b.dataset.spot] = b.dataset.v === '1'; render(); return; }
+      if (act === 'person') {
+        LS.People.decide(state, b.dataset.id, b.dataset.do);
+        if (b.dataset.do !== 'accept' || state.people[b.dataset.id].status !== 'met') close();
+        LS.UI.renderAll();
+        return;
+      }
       if (act === 'driver') { driverSel = b.dataset.id; render(); return; }
       if (act === 'start') {
         const type = b.dataset.type;
@@ -459,6 +503,7 @@ LS.Panel = (function () {
         const opts = { spotId: b.dataset.spot, routeKey: b.dataset.route };
         if (LS.Tasks.DEF[type].timed || type === 'shelter') opts.hours = hours[key] || defHours(type);
         if (b.dataset.clear) { opts.clear = true; opts.sleepAfter = !!clearSleep[b.dataset.spot]; }
+        if (b.dataset.person) opts.person = b.dataset.person;
         const res = LS.Tasks.start(state, type, sel[key] || [], opts);
         if (res.error) LS.UI.toast(res.error);
         else if (state.guides.time && state.hints.assigned < 2) {

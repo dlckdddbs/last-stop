@@ -52,7 +52,7 @@ LS.Rules = (function () {
 
   function canDrive(state, m) {
     const D = C().driver;
-    return !!char(m.id).canDrive && m.energy > D.minEnergy && m.mental >= D.minMental && !lowHp(m) && infectionStage(state, m) !== '악화';
+    return !!char(m.id).canDrive && !m.temp && m.energy > D.minEnergy && m.mental >= D.minMental && !lowHp(m) && infectionStage(state, m) !== '악화';
   }
 
   function driveBlockReason(state, m) {

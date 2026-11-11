@@ -96,7 +96,15 @@ LS.Zombie = (function () {
     const reg = regionDef(state);
     let base = reg.chance;
     if (reg.lateDay && LS.Clock.day(state.minute) >= reg.lateDay) base = reg.lateChance;
-    if (!LS.Clock.isNight(state.minute)) return { p: base, night: false, base };
+    // 1~3일째 밤에는 멈춘 버스의 밤 사건이 없다 (03장). 3일째 밤이 끝나는 4일째 06시까지.
+    // 낮에 나왔어도 도착이 그 밤에 걸리면 나오지 않는다 (예: 19시 등장 → 0시 도착)
+    const protectEnd = 3 * 1440 + C().dayStartHour * 60;
+    if (!LS.Clock.isNight(state.minute)) {
+      const arrive = state.minute + Z().approachMin;
+      if (arrive < protectEnd && LS.Clock.isNight(arrive)) return { p: 0, night: false, base, protectedNight: true };
+      return { p: base, night: false, base };
+    }
+    if (state.minute < protectEnd) return { p: 0, night: true, base, protectedNight: true };
     // 밤 보정: 마지막 밤 등장 후 1일차 0% · 2일차 기본 · 3일차 +25%p · 4일차 확정 (날은 자정에 바뀐다)
     const d = LS.Clock.rolloverIndex(state.minute) - z(state).lastNightIdx + 1;
     const p = d <= 1 ? 0 : d === 2 ? base : d === 3 ? Math.min(1, base + Z().nightBonusDay3) : 1;
@@ -264,7 +272,7 @@ LS.Zombie = (function () {
 
   // ---------- 30분 전 (직접 관측) ----------
   function fighters(state) {
-    return busCrew(state).filter((m) => R().canHeavy(state, m) && R().canOutside(state, m));
+    return busCrew(state).filter((m) => !m.temp && R().canHeavy(state, m) && R().canOutside(state, m));   // 임시 동행은 싸우지 않는다
   }
 
   function fightChoice(state, h) {
@@ -525,6 +533,7 @@ LS.Zombie = (function () {
           label: '여기서 내려놓는다',
           run: (s) => {
             LS.State.killMember(s, m.id, 'left');
+            if (sua) setTimeout(() => LS.Time.handle(LS.People.violation(s, 'lee_sua', `감염된 ${josa(nm, '을를')} 내려놓았다`)), 0);   // 이수아 합류 조건
             s.crew.forEach((o) => R().addMental(o, -3));   // 임시값: 위험 하차 충격 (기획서 -3~-8)
             LS.State.addLog(s, `${josa(nm, '을를')} 내려놓았다`, true, 'event', `감염 66시간 · 모두 정신력 -3${sua ? ' · 이수아와의 약속을 어겼다 (4단계에서 적용)' : ''}`);
           },

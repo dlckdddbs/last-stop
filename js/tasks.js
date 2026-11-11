@@ -25,8 +25,12 @@ LS.Tasks = (function () {
     shelter:         { label: '잠자리',          crew: 1, multi: true, outside: true, noWork: true, isSleep: true },
     camp:            { label: '침낭 수면',       crew: 1, multi: true, timed: true, rest: 'sleepBag', outside: false, noWork: true, isSleep: true,
                        help: '버스 옆에 침낭을 깔고 바로 자요. 기력 +3/시간. 무리가 와도 정찰(경보 함정)이 있으면 2시간 전에, 경계 2명이 있으면 30분 전에 깨워 줘요. 둘 다 없으면 모르고 자다가 다치거나 물릴 수 있어요.' },
-    watch:           { label: '경계',            crew: 2, multi: true, timed: true, drain: 'light', outside: false,
-                       help: '2명 이상이 깨어서 망을 봐요. 기력 -3/시간, 그동안 잘 수 없어요. 경계가 서 있으면 침낭으로 자도 안전해요.' },
+    watch:           { label: '경계',            crew: 1, multi: true, timed: true, drain: 'light', outside: false,
+                       help: '깨어서 망을 봐요. 기력 -3/시간, 그동안 잘 수 없어요. 1명이면 버스 안의 사람(도둑 등)은 막지만, 무리에 대비해 침낭을 지키려면 2명 이상이 서야 해요.' },
+    interview:       { label: '면담',            crew: 1, minutes: 60,  drain: 'light', outside: false, noSlow: true, person: true,
+                       help: '1시간 이야기를 나눠요. 말이 앞뒤가 맞는지, 어디로 가려는지, 의도를 봐요.' },
+    inspect:         { label: '검사',            crew: 1, minutes: 60,  drain: 'light', outside: false, noSlow: true, person: true,
+                       help: '1시간 동안 짐과 몸을 살펴요. 무기·물자·상처·물린 자국을 봐요. 상처는 윤재하가 더 잘 가려봐요.' },
     sleep_bed:       { label: '환자용 침상 수면', crew: 1, multi: true, timed: true, rest: 'sleepBed', outside: false, noWork: true, isSleep: true,
                        help: '버스 안 환자용 침상(1개)에 누워서 자요. 기력 +3/시간. 식중독·부상인 사람을 먼저 눕혀요.' },
     talk:            { label: '회복 대화',       crew: 2, minutes: 60,  outside: false, noSlow: true,
@@ -105,6 +109,17 @@ LS.Tasks = (function () {
     const busy = ms.find((m) => m.task);
     if (busy) return `${josa(R().name(busy.id), '은는')} 다른 일을 하고 있다`;
     if (d.outside && LS.Zombie.siegeActive(state)) return '포위 중에는 밖에 나갈 수 없다';
+    const tempM = ms.find((m) => m.temp);
+    if (tempM && !d.isSleep) return `${josa(R().name(tempM.id), '은는')} 임시 동행이라 일을 맡지 않는다`;
+    if (d.person) {
+      const r = state.people[opts.person];
+      if (!r || r.status !== 'met' || r.at !== state.locationId) return '이야기할 사람이 없다';
+      if (type === 'interview' && r.interviewed) return '이미 면담했다';
+      if (type === 'inspect' && r.inspected) return '이미 검사했다';
+      if (state.tasks.some((t) => t.person === opts.person)) return '이미 확인하는 중이다';
+      const zb = LS.People.talkBlock(state);
+      if (zb) return zb;
+    }
     const worse = ms.find((m) => R().infectionStage(state, m) === '악화');
     if (worse && !d.isSleep) return `${josa(R().name(worse.id), '은는')} 감염이 악화돼 누워 있어야 한다`;
     if (type === 'repair') {
@@ -203,6 +218,7 @@ LS.Tasks = (function () {
       locId: state.locationId,
       spotId: opts.spotId || null,
       routeKey: opts.routeKey || null,
+      person: opts.person || null,       // 면담·검사 대상 (만남 id)
       startedAt: state.minute,
       workDone: 0,
       workTotal: workMinutes(state, type, ids, opts),
@@ -343,6 +359,7 @@ LS.Tasks = (function () {
     const d = DEF[task.type];
     if (task.type === 'shelter') return `${spotLabel(state, task)} 잠자리`;
     if (task.spotId) return `${spotLabel(state, task)} ${d.label}`;
+    if (task.person) return `${LS.ENCOUNTERS[task.person].who.map((id) => R().name(id)).join('·')} ${d.label}`;
     if (task.routeKey) {
       const other = task.routeKey.split('|').find((x) => x !== task.locId);
       return `${LS.LOCATIONS[other].name} 방향 ${d.label}`;
@@ -568,7 +585,8 @@ LS.Tasks = (function () {
     if (task.type === 'repair') {
       if (done) {
         const before = state.bus.durability;
-        state.bus.durability = Math.min(state.bus.maxDurability, before + C().repair.amount);
+        const mech = ms.some((m) => LS.CHARACTERS[m.id].expert === 'mechanic') ? 5 : 0;   // 정비원 수리 +5 (13장)
+        state.bus.durability = Math.min(state.bus.maxDurability, before + C().repair.amount + mech);
         summary = `내구도 ${before} → ${state.bus.durability}`;
       } else {
         summary = '정비를 마치지 못했다 (부품은 이미 썼다)';
@@ -576,6 +594,13 @@ LS.Tasks = (function () {
     }
 
     if (task.type === 'fight') summary = '주변을 정리하고 돌아왔다';
+
+    // 면담·검사: 결과는 사실과 단서로만 (판단은 플레이어)
+    if (DEF[task.type].person && done) {
+      summary = LS.People.reveal(state, task.person, task.type, ms);
+      parts.push('사람 패널에서 태울지 정하세요');
+      important = true;
+    }
 
     if (task.type === 'scout_route' && done) {
       state.routes[task.routeKey].known = true;
@@ -690,7 +715,7 @@ LS.Tasks = (function () {
 
   // 지금 이 사람에게 맡길 만한 일이 있는가 ('! 할 일' 표시용. 잠은 일로 치지 않는다)
   function hasWork(state, m) {
-    if (state.travel || m.task || !R().canHeavy(state, m) || !R().canOutside(state, m) || LS.Zombie.siegeActive(state)) return false;
+    if (state.travel || m.task || m.temp || !R().canHeavy(state, m) || !R().canOutside(state, m) || LS.Zombie.siegeActive(state)) return false;
     const place = LS.State.place(state);
     if (!place) return false;
     if (state.locationId === 'roadside' && state.roadside && state.roadside.blocked) return true;

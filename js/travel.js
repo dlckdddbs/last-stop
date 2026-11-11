@@ -66,7 +66,7 @@ LS.Travel = (function () {
     const reason = departBlockReason(state, toId, driverId);
     if (reason) return { error: reason };
     // 버스 옆에서 자거나 경계 서던 사람은 버스에 타고, 이동 중 휴식으로 이어간다
-    state.tasks.slice().forEach((t) => { if (LS.Tasks.DEF[t.type].timed) LS.Tasks.abort(state, t.id); });
+    state.tasks.slice().forEach((t) => { const d = LS.Tasks.DEF[t.type]; if (d.timed || d.person) LS.Tasks.abort(state, t.id); });   // 잠·경계·면담·검사는 출발하면 끝난다
     const fromLabel = LS.State.location(state).name;
     let travel;
     if (state.locationId === 'roadside') {
@@ -88,6 +88,7 @@ LS.Travel = (function () {
     }
     travel.driverId = driverId || drivers(state)[0].id;
     travel.startedAt = state.minute;
+    LS.People.onDepart(state);   // 태울지 정하지 않은 사람은 두고 간다
     const toasts = LS.Zombie.onDepart(state, travel.driverId);   // 밤 떠나기·포위 돌파 대가, 추격 기록
     state.travel = travel;
     state.roadside = null;
@@ -125,10 +126,10 @@ LS.Travel = (function () {
     if (state.bus.durability <= 0) return { error: '버스가 멈췄다 (내구도 0)' };
     const block = loopBlock(state);
     if (block) return { error: block };
-    state.tasks.slice().forEach((t) => { if (LS.Tasks.DEF[t.type].timed) LS.Tasks.abort(state, t.id); });
+    state.tasks.slice().forEach((t) => { const d = LS.Tasks.DEF[t.type]; if (d.timed || d.person) LS.Tasks.abort(state, t.id); });   // 잠·경계·면담·검사는 출발하면 끝난다
     const d = loopDriver(state);
     const loc = LS.State.location(state);
-    const toasts = LS.Zombie.onDepart(state, d.id);
+    const toasts = LS.Zombie.onDepart(state, d.id);   // 돌고 돌아오면 같은 자리라, 만난 사람은 그대로 기다린다
     state.travel = {
       loop: true, key: null, from: state.locationId, to: state.locationId, name: loc.name, mapPos: loc.map,
       total: C().zombie.loopMin, progress: 0, event: null, mistake: null, driverId: d.id, startedAt: state.minute
@@ -187,6 +188,7 @@ LS.Travel = (function () {
     t.progress = Math.min(t.total, t.progress + dt * (t.loop ? 1 : speed(driver)));
     state.resources.fuel = Math.max(0, state.resources.fuel - C().fuel.drivePerHour * dt / 60);
     R().applyDrain(driver, isExpert(driver) ? C().energy.driveExpert : C().energy.drive, dt);
+    out.push(...LS.People.onDrive(state, driver, dt));   // 한정수 합류 조건: 하루 운전 8시간
     const kinds = restKinds(state, driver.id);
     state.crew.forEach((m) => { if (m !== driver) R().applyRest(state, m, kinds[m.id], dt); });
 
@@ -269,6 +271,7 @@ LS.Travel = (function () {
       if (!state.flags.firstCompanion) { state.flags.firstCompanion = fc.id; out.push({ dialog: fc.meet }); }
       else out.push({ dialog: fc.gone });
     }
+    LS.People.onStop(state, out);   // 임시 동행 목적지, 합류 조건 하차, 이 장소의 생존자
     return out;
   }
 
@@ -347,7 +350,7 @@ LS.Travel = (function () {
     const others = drivers(state, driver.id);
     const choices = others.map((o) => ({
       label: `${R().name(o.id)}에게 운전을 넘긴다`,
-      desc: `기력 ${Math.round(o.energy)} · 교대 10분`,
+      desc: `기력 ${Math.round(o.energy)} · 교대 10분${LS.CHARACTERS[o.id].condition === 'drive8' ? ` · 오늘 운전 ${R().hoursLabel(LS.People.drivenToday(state, o))} (합류 조건 하루 8시간)` : ''}`,
       run: (s) => {
         s.travel.driverId = o.id;
         s.travel.pause = (s.travel.pause || 0) + 10;   // 안전 정차 교대 10분 (02장)

@@ -67,12 +67,15 @@ LS.State = (function () {
       places: {},                      // 장소별 보급·정찰 상태 (world.js가 생성)
       routes: {},                      // 경로별 확인 여부
       flags: {},                       // 사건 진행 표시 (예: airportKnown)
+      people: {},                      // 만난 사람별 기록: 만남·면담·검사 결과·결정 (people.js)
       // 정차: 30분 이상 멈추면 좀비 등장 판정 (14장). 이동 중이면 null
       stop: { since: s.hour * 60, nextRoll: s.hour * 60 + LS.CONFIG.zombie.stopMin },
       // 좀비: 다가오는 무리, 포위, 밤 보정 기록 등 (zombie.js)
       zombie: {
         horde: null, siege: null, pursuit: null,
-        lastNightIdx: LS.Clock.rolloverIndex(s.hour * 60) - 1,   // 마지막 밤 등장 '날' (처음은 전날로 쳐서 1일째 밤 = 2일차)
+        // 마지막 밤 등장 '날'. 1~3일째 밤은 사건이 없으므로(03장), 3일째에 등장한 것으로 쳐서
+        // 4일째 밤이 2일차(기본 확률)가 되게 한다 (임시: 4일째 밤에 바로 확정 무리가 오지 않게)
+        lastNightIdx: LS.Clock.rolloverIndex(2 * 1440 + 12 * 60),
         hidOnce: false,                // 30분 결정에서 숨어 넘겼다 → 다음 30분 결정은 확정 발각
         leaveCost: 0,                  // 밤 30분 전 떠나기 내구도 대가 (출발할 때 적용)
         breakout: false,               // 포위 돌파를 골랐다 (지도에서 출발하면 적용)
