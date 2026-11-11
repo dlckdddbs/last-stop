@@ -90,7 +90,7 @@ LS.Meals = (function () {
       if (ration.mental) R().addMental(m, ration.mental);
     });
     const left = R().round1(LS.State.foodTotal(state));
-    LS.State.addLog(state, `${ration.label} 배급`, false, 'meal', `${R().round1(need(state, key) || 0)}인분 먹음 · 남은 식량 ${left}인분`);
+    LS.State.addLog(state, key === 'skip' ? '끼니를 걸렀다' : key === 'half' ? '반 배급' : '정상 배급', false, 'meal', `${R().round1(need(state, key) || 0)}인분 먹음 · 남은 식량 ${left}인분`);
     const out = [];
     if (hungry.length) {
       LS.State.addLog(state, `굶주림으로 HP가 줄었다`, true, 'body', `${hungry.map((m) => `${R().name(m.id)} (결핍 ${m.deficit})`).join(', ')}`);

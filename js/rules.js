@@ -30,17 +30,29 @@ LS.Rules = (function () {
   // HP가 너무 낮으면 치료·휴식만 (임시값)
   function lowHp(m) { return m.hp <= C().lowHpWorkLimit; }
 
-  // 운전·정찰·파밍·정비·장애물 제거 같은 고강도 작업이 가능한가
-  function canHeavy(state, m) {
-    return m.energy > C().energy.heavyMin && !lowHp(m);
+  // 감염 단계 (12장): 잠복 0~24시간 · 발열 24~48 (외부 작업 불가, 기력 회복 절반) · 악화 48~72 (모든 작업 불가)
+  function infectionHours(state, m) { return m.infectedAt == null ? null : (state.minute - m.infectedAt) / 60; }
+  function infectionStage(state, m) {
+    const h = infectionHours(state, m);
+    if (h == null) return null;
+    const I = C().infection;
+    return h < I.feverH ? '잠복' : h < I.worseH ? '발열' : '악화';
   }
 
-  // 밖에 나가서 하는 작업이 가능한가 (식중독이면 12시간 외부 작업 불가)
-  function canOutside(state, m) { return !isPoisoned(state, m) && !lowHp(m); }
+  // 운전·정찰·파밍·정비·장애물 제거 같은 고강도 작업이 가능한가
+  function canHeavy(state, m) {
+    return m.energy > C().energy.heavyMin && !lowHp(m) && infectionStage(state, m) !== '악화';
+  }
+
+  // 밖에 나가서 하는 작업이 가능한가 (식중독이면 12시간, 감염은 발열부터 외부 작업 불가)
+  function canOutside(state, m) {
+    const st = infectionStage(state, m);
+    return !isPoisoned(state, m) && !lowHp(m) && st !== '발열' && st !== '악화';
+  }
 
   function canDrive(state, m) {
     const D = C().driver;
-    return !!char(m.id).canDrive && m.energy > D.minEnergy && m.mental >= D.minMental && !lowHp(m);
+    return !!char(m.id).canDrive && m.energy > D.minEnergy && m.mental >= D.minMental && !lowHp(m) && infectionStage(state, m) !== '악화';
   }
 
   function driveBlockReason(state, m) {
@@ -49,6 +61,7 @@ LS.Rules = (function () {
     if (m.energy <= D.minEnergy) return '기력 부족';
     if (m.mental < D.minMental) return '정신력 흔들림';
     if (lowHp(m)) return 'HP 낮음';
+    if (infectionStage(state, m) === '악화') return '감염 악화';
     return '';
   }
 
@@ -60,6 +73,8 @@ LS.Rules = (function () {
     let rate = 1;
     for (const r of C().meal.recovery) { if (m.deficit >= r.min) { rate = r.rate; break; } }
     if (isPoisoned(state, m)) rate *= 0.5;
+    const st = infectionStage(state, m);
+    if (st === '발열' || st === '악화') rate *= 0.5;
     return rate;
   }
 
@@ -131,14 +146,14 @@ LS.Rules = (function () {
     const c = s.charCodeAt(s.length - 1);
     const hangul = c >= 0xAC00 && c <= 0xD7A3;
     const jong = hangul ? (c - 0xAC00) % 28 : 0;
-    const P = { '이가': ['이', '가'], '은는': ['은', '는'], '을를': ['을', '를'], '으로': ['으로', '로'] }[pair];
+    const P = { '이가': ['이', '가'], '은는': ['은', '는'], '을를': ['을', '를'], '으로': ['으로', '로'], '와과': ['과', '와'] }[pair];
     const has = pair === '으로' ? jong !== 0 && jong !== 8 : jong !== 0;   // ㄹ 받침 뒤에는 '로'
     return s + (has ? P[0] : P[1]);
   }
 
   return {
     rand, randInt, chance, pick, pickWeighted, clamp, round1,
-    member, char, name, isPoisoned, isFree, lowHp, canHeavy, canOutside, canDrive, driveBlockReason, mentalStage,
+    member, char, name, isPoisoned, isFree, lowHp, infectionHours, infectionStage, canHeavy, canOutside, canDrive, driveBlockReason, mentalStage,
     recoveryRate, speedFactor, applyRest, applyDrain,
     mistakeChance, rollOutcome, hurt, addMental, meaningfulWork, hoursLabel, josa
   };

@@ -31,6 +31,8 @@ LS.Time = (function () {
     const cands = [];
     if (state.travel) cands.push({ at: state.minute + LS.Travel.etaMinutes(state), label: '도착 예정', busy: true });
     state.tasks.forEach((t) => cands.push({ at: state.minute + LS.Tasks.eta(state, t), label: `${LS.Tasks.taskTitle(state, t)} 끝`, busy: true }));
+    const zk = LS.Zombie.nextKnown(state);   // 아는 무리·포위만 (모르는 무리는 미리 알려 주지 않는다)
+    if (zk) cands.push(zk);
     const ev = scheduledFrom(state.minute + 1);
     if (ev && (busy() || ev.at - state.minute <= SCHEDULE_LOOKAHEAD)) cands.push({ at: ev.at, label: LS.EVENTS[ev.event].title });
     if (!cands.length) return null;
@@ -43,6 +45,7 @@ LS.Time = (function () {
     let t = nextBoundary(state.minute);
     state.tasks.forEach((task) => { t = Math.min(t, state.minute + LS.Tasks.nextMilestone(state, task)); });
     if (state.travel) t = Math.min(t, state.minute + LS.Travel.nextMilestone(state));
+    t = Math.min(t, state.minute + LS.Zombie.nextMilestone(state));
     t = Math.ceil(t - 1e-9);
     return Math.min(Math.max(t, state.minute + 1), LS.Clock.end());
   }
@@ -61,7 +64,9 @@ LS.Time = (function () {
   // 한 걸음 진행. 계속 진행해도 되면 true
   function step() {
     if (state.dialogOpen || state.gameOver) return false;
-    return advanceTo(nextTarget());
+    // 기다리기 목표 시각이 30분 경계 사이에 있으면 정확히 거기서 멈춘다
+    const t = nextTarget();
+    return advanceTo(goalAt != null && goalAt > state.minute && goalAt !== Infinity ? Math.min(t, goalAt) : t);
   }
 
   // 알림·사건 처리. 멈춰야 하면 false
@@ -135,6 +140,8 @@ LS.Time = (function () {
   const ENDINGS = {
     deadline: { title: '접수 마감', text: '30일째 24시가 지났다.' },
     protagonist: { title: '빈 운전석', text: '윤재하가 숨졌다.' },
+    heroTurned: { title: '빈 운전석', text: '감염 72시간. 윤재하는 돌아오지 못했다.' },
+    selfExit: { title: '마지막 정류장', text: '윤재하는 스스로 버스에서 내렸다. 남은 일행이 이어서 간다.' },
     wipe: { title: '멈춘 버스', text: '버스에 남은 사람이 없다.' }
   };
 

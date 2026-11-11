@@ -39,6 +39,9 @@ LS.Sim = (function () {
     LS.Tasks.beginStep(state);
     state.tasks.slice().forEach((t) => { if (state.tasks.includes(t)) out.push(...LS.Tasks.advance(state, t, prev, next)); });
 
+    // 좀비: 정차 판정·무리 접근·포위·감염 시계 (14~15장, 12장)
+    out.push(...LS.Zombie.advance(state, prev, next));
+
     // 식중독 회복
     state.crew.forEach((m) => {
       if (m.poisonUntil && prev < m.poisonUntil && next >= m.poisonUntil) LS.State.addLog(state, `${R().name(m.id)}의 식중독이 나았다`, false, 'body');

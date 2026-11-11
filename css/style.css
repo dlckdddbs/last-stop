@@ -509,3 +509,23 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 .pn-safety { font-size: 13px; padding: 6px 8px; border-radius: 6px; margin: 4px 0 8px; }
 .pn-safety.ok { background: #1d2f1f; color: #9ad3a1; }
 .pn-safety.bad { background: #3a1e1e; color: #f0a37a; }
+
+/* ---------- 좀비 (3단계) ---------- */
+.z-badge { font-size: 12px; padding: 3px 10px; border-radius: 10px; white-space: nowrap; }
+.z-badge.warn { background: #3a3220; color: #e3c27a; }
+.z-badge.danger { background: #4a1e1e; color: #ffb3a8; animation: z-pulse 1.4s ease-in-out infinite alternate; }
+@keyframes z-pulse { from { opacity: 1; } to { opacity: 0.6; } }
+.z-banner {
+  position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4;
+  padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+.z-banner.warn { background: rgba(58, 50, 32, 0.92); color: #f1d38a; border: 1px solid #8a7a4a; }
+.z-banner.danger { background: rgba(74, 30, 30, 0.94); color: #ffd0c8; border: 1px solid #b45555; }
+.danger-btn { background: #4a1e1e; border-color: #b45555; color: #ffd0c8; }
+.siege-acts { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.siege-acts .act-go { text-align: left; }
+.siege-acts small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.res .res-value, .res .res-label { white-space: nowrap; }
+.tb-resources { min-width: 0; gap: 12px; }
+.z-badge { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+#stage.panel-open .z-banner { left: 34%; }

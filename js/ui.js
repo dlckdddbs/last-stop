@@ -26,6 +26,14 @@ LS.UI = (function () {
 
   function mentalClass(label) { return label === '안정' ? '' : label === '동요' ? 'shaken' : 'broken'; }
 
+  // 감염 단계는 공개한다 (12장): 이름 옆 꼬리표
+  function infectTag(m) {
+    const st = R().infectionStage(state, m);
+    if (!st) return '';
+    const left = LS.CONFIG.infection.turnH * 60 - (state.minute - m.infectedAt);
+    return ` <small class="sick" title="전환까지 ${R().hoursLabel(Math.max(0, left))}">감염·${st}${m.isolated ? '·격리' : ''}</small>`;
+  }
+
   function isOutside(m) {
     if (!m.task) return false;
     const t = LS.Tasks.find(state, m.task);
@@ -77,7 +85,9 @@ LS.UI = (function () {
     ].join('');
 
     const b = state.bus;
-    $('tb-bus').innerHTML = res('bus', '버스 내구도', `${b.durability} / ${b.maxDurability}`) +
+    const zs = LS.Zombie.status(state);
+    $('tb-bus').innerHTML = (zs ? `<span class="z-badge ${zs.level}" title="정찰·경보·직접 본 것만 표시돼요">${esc(zs.text)}</span>` : '') +
+      res('bus', '버스 내구도', `${b.durability} / ${b.maxDurability}${b.durability <= 0 ? ' <small class="sick">정지</small>' : ''}`) +
       `<button class="engine-badge ${b.engineOn ? 'on' : ''}" data-ui="engine" title="엔진을 켜면 정차 중에도 연료를 쓴다 (시간당 0.02단위)">엔진 ${b.engineOn ? '켬' : '끔'}</button>`;
   }
 
@@ -99,7 +109,7 @@ LS.UI = (function () {
       if (spot.checkedEmpty === false) return '물자 있어 보임';
       return '미확인';
     }
-    if (spot.building) return `${spot.building.checked ? (spot.building.threat ? '위협 있음' : '안전') : '안 미확인'} · 도보 ${spot.walk}분`;
+    if (spot.building) return `${spot.building.abandoned ? '포기함' : spot.building.checked ? (spot.building.threat ? '좀비 있음' : '바리케이드') : '안 미확인'} · 도보 ${spot.walk}분`;
     return '';
   }
 
@@ -131,10 +141,14 @@ LS.UI = (function () {
       html += '<div class="camp-mark">' + camping.map((t) => `${t.type === 'camp' ? '침낭' : '경계'}: ${esc(t.members.map((id) => R().name(id)).join('·'))} (${R().hoursLabel(LS.Tasks.eta(state, t))})`).join(' · ') + '</div>';
     }
     if (loc.exit) html += '<div class="scene-note">도시 외곽의 끝. 주거 지역은 이후 단계에서 열립니다.</div>';
+    const zs = LS.Zombie.status(state);
+    if (zs) html += `<div class="z-banner ${zs.level}">${esc(zs.text)}</div>`;
     const areaLabel = loc.roadside && state.roadside.blocked ? '장애물 조사·제거' : '주변 정찰';
     html += '<div class="scene-actions">' +
       `<button data-ui="area">${areaLabel}</button>` +
+      (state.zombie.siege ? '<button data-ui="siege" class="danger-btn">포위 대응</button>' : '') +
       '<button data-ui="camp">버스 옆 야영</button>' +
+      '<button data-ui="repair">버스 정비</button>' +
       '<button data-ui="screen" data-screen="bus">버스 안으로</button>' +
       '<button data-ui="screen" data-screen="map">지도 · 출발</button></div>';
     return html;
@@ -218,8 +232,9 @@ LS.UI = (function () {
     const pct = Math.min(100, t.progress / t.total * 100);
     const pass = LS.Travel.passengerRest(state, t.driverId, 0).map((x) =>
       `${esc(R().name(x.m.id))} ${x.bed ? '침상' : '좌석'} · 기력 ${x.now}${x.capped ? ` (${x.cap}, 그대로)` : ' ↑'}`);
+    const route = t.loop ? `${esc(t.name)} 주변을 돌며 무리가 흩어지길 기다린다` : `${esc(LS.LOCATIONS[t.from].name)} → ${esc(LS.LOCATIONS[t.to].name)}`;
     return '<div class="travel-panel">' +
-      `<div class="tp-route">${esc(LS.LOCATIONS[t.from].name)} → ${esc(LS.LOCATIONS[t.to].name)}</div>` +
+      `<div class="tp-route">${route}</div>` +
       `<div class="bar"><div class="energy" style="width:${pct}%"></div></div>` +
       `<div class="tp-row">남은 운전 약 ${R().hoursLabel(LS.Travel.etaMinutes(state))} · 운전 ${d ? esc(R().name(d.id)) + ' (기력 ' + Math.round(d.energy) + ', 30에서 멈춤)' : '없음'} · 연료 ${state.resources.fuel.toFixed(1)}단위</div>` +
       (pass.length ? `<div class="tp-row">동승자 휴식 (침상 +${LS.CONFIG.energy.bedMoving.rate}/시간·100까지, 좌석 +${LS.CONFIG.energy.seatRest.rate}/시간·${LS.CONFIG.energy.seatRest.cap}까지): ${pass.join(' · ')}</div>` : '') +
@@ -268,7 +283,7 @@ LS.UI = (function () {
       return `<button class="crew-card ${selected === m.id ? 'selected' : ''} ${isOutside(m) ? 'away' : ''}" data-crew="${m.id}">` +
         (free ? '<span class="crew-badge" title="이곳에 아직 맡길 만한 일이 있어요 (정찰·확인·파밍 등)">! 할 일</span>' : '') +
         `<img src="${A().portraits[m.id]}" alt="">` +
-        `<div class="crew-info"><div class="crew-name">${esc(c.name)}${sick ? ' <small class="sick">식중독</small>' : ''}</div>` +
+        `<div class="crew-info"><div class="crew-name">${esc(c.name)}${sick ? ' <small class="sick">식중독</small>' : ''}${infectTag(m)}</div>` +
         `<div class="crew-role">${esc(LS.Tasks.labelFor(state, m))}</div>` +
         `<div class="crew-bars"><span>HP</span><div class="bar"><div class="hp" style="width:${m.hp}%"></div></div>` +
         `<span>기력</span><div class="bar"><div class="energy" style="width:${m.energy}%"></div></div>` +
@@ -358,11 +373,12 @@ LS.UI = (function () {
     if (!state.bus.engineOn && state.resources.fuel <= 0) { toast('연료가 없다.'); return; }
     if (!state.bus.engineOn && state.crew.every((m) => isOutside(m))) { toast('버스에 사람이 없다.'); return; }
     state.bus.engineOn = !state.bus.engineOn;
-    LS.State.addLog(state, state.bus.engineOn ? '엔진을 켰다' : '엔진을 껐다', false, 'system', state.bus.engineOn ? '공회전: 연료 시간당 0.02단위' : '');
+    LS.State.addLog(state, state.bus.engineOn ? '엔진을 켰다' : '엔진을 껐다', false, 'system', state.bus.engineOn ? '공회전: 연료 시간당 0.02단위 · 2시간 거리 안의 무리는 소리를 듣는다' : '');
     if (state.bus.engineOn && !state.bus.facilities.some((f) => f && f.power)) {
-      toast('지금은 켜도 쓸 설비가 없어요. (냉장고·의무실 같은 설비는 6단계에서 생겨요) 연료만 시간당 0.02단위 들어요.');
+      toast('지금은 켜도 쓸 설비가 없어요 (냉장고·의무실은 6단계). 연료만 들고, 2시간 거리 안의 무리가 소리를 들으면 서둘러 와요.');
     }
     renderAll();
+    if (state.bus.engineOn) LS.Time.handle(LS.Zombie.onEngine(state));   // 엔진 규칙 ②
   }
 
   function bind() {

@@ -85,10 +85,50 @@ LS.CONFIG = {
     looted: [0, 0.2], intact: [1.25, 1.5]
   },
   hiddenThreatChance: 0.15,       // 미확인 건물의 숨은 위협 (08장)
-  // 잠자리 건물 (2026-11-10 결정, 수치는 임시값): 장소마다 있을 확률, 버스에서 걸어가는 시간, 가는 길+내부 확인 합계
+  // 잠자리 건물 (2026-11-10 결정, 수치는 임시값): 장소마다 있을 확률, 버스에서 걸어가는 시간,
+  // 가는 길+안 확인+바리케이드 설치 합계 (2026-11-11: 확인에 시간이 걸리는 건 혹시 모를 좀비에 대비해 바리케이드를 쳐서)
   shelter: { chance: 0.6, walkMin: [15, 20], checkTotalMin: 60 },
-  // 침낭 습격 (임시값, 3단계 좀비 판정으로 바꿀 예정): 정찰(경보 함정)도 경계 2명도 없을 때 시간당 확률
-  camp: { raidPerHour: 0.02, raidHp: -15, raidMental: -5 },
+  // ---------- 좀비 (14~15장) ----------
+  zombie: {
+    // 지역별 등장 확률과 규모 (14장 ①)
+    regions: {
+      outskirts:   { chance: 0.20, sizes: ['small'] },
+      residential: { chance: 0.25, sizes: ['small', 'medium'] },
+      military:    { chance: 0.30, sizes: ['medium'] },
+      downtown:    { chance: 0.35, sizes: ['medium', 'large'] },
+      airport:     { chance: 0.40, lateChance: 0.45, lateDay: 21, sizes: ['medium', 'large'] }
+    },
+    stopMin: 30,              // 30분 이상 멈추면 정차 (운전자 교대 10분은 제외)
+    approachMin: 300,         // 임시값: 등장한 무리가 버스까지 오는 시간 (표의 '약 5시간')
+    alarmMin: 120,            // 경보 함정은 무리가 2시간 거리에 오면 울린다 (06장)
+    seeMin: 30,               // 규모는 30분 거리에서 보인다 (04장)
+    nightApproach: 0.45,      // 미발각 밤 무리 중 30분 거리까지 오는 비율
+    nightBonusDay3: 0.25,     // 밤 보정: 1일차 0% · 2일차 기본 · 3일차 기본 +25%p · 4일차 확정
+    hideDetect: 0.70,         // 밤 숨기 발각
+    baitDetect: 0.55,         // 미끼 두고 숨기 발각
+    baitFood: 3, baitParts: 1,
+    nightLeaveDurability: 3,  // 밤 30분 전 떠나기
+    loopMin: 180,             // 떠나고 돌아오기: 무리는 3시간 뒤 흩어진다 (그동안 버스를 몰고 돈다)
+    sizes: {
+      small:  { label: '소규모', count: [3, 8],   siegeH: 1, dmg: 3, bite: 0.05 },
+      medium: { label: '중규모', count: [9, 30],  siegeH: 3, dmg: 5, bite: 0.15 },
+      large:  { label: '대규모', count: [31, 60], siegeH: 6, dmg: 8, bite: 0.30 }
+    },
+    siegeMental: -10,         // 중·대규모 포위를 겪은 사람
+    breakout: [8, 15],        // 돌파 내구도 피해
+    fight: { minCrew: 2, minutes: 30, bite: 0.05 },   // 소규모 전투 (무기는 버스 무기 보관함 것을 쓴다)
+    // 잠자리 건물 안의 좀비 처리 (2026-11-11 결정: 인원이 많을수록 안전, 수치는 임시값). 1인당 부상·물림 확률
+    clearRisk: [
+      { min: 3, injury: 0.05, bite: 0.01 },   // 3명 이상: 웬만해선 안 다친다
+      { min: 2, injury: 0.25, bite: 0.05 },   // 2명: 어느 정도 위험
+      { min: 1, injury: 0.60, bite: 0.10 }    // 1명: 다칠 확률이 높다
+    ],
+    injuryChance: 0.30, injuryHp: -8                  // 임시값: '각 부상 판정' (기획서에 수치 없음)
+  },
+  // 감염 (12장): 시간 단위
+  infection: { feverH: 24, worseH: 48, decideH: 66, turnH: 72 },
+  // 기본 수리 (13장): 부품 2개·3시간·내구도 +15
+  repair: { parts: 2, minutes: 180, amount: 15 },
 
   // 식사·신선도 (10장)
   meal: {

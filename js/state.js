@@ -12,7 +12,9 @@ LS.State = (function () {
       sleepStreak: 0,             // 누워서 이어 잔 시간(분)
       lastMentalSleep: -99999,    // 수면 정신력 보너스를 받은 시각
       lastHpSleep: -99999,        // 수면 HP 보너스를 받은 시각
-      lastTalk: -99999            // 회복 대화에 참여한 시각
+      lastTalk: -99999,           // 회복 대화에 참여한 시각
+      infectedAt: null,           // 물린 시각(분). 감염 시계 (12장)
+      isolated: false             // 66시간 결정에서 격리 좌석을 골랐는가
     };
   }
 
@@ -65,6 +67,17 @@ LS.State = (function () {
       places: {},                      // 장소별 보급·정찰 상태 (world.js가 생성)
       routes: {},                      // 경로별 확인 여부
       flags: {},                       // 사건 진행 표시 (예: airportKnown)
+      // 정차: 30분 이상 멈추면 좀비 등장 판정 (14장). 이동 중이면 null
+      stop: { since: s.hour * 60, nextRoll: s.hour * 60 + LS.CONFIG.zombie.stopMin },
+      // 좀비: 다가오는 무리, 포위, 밤 보정 기록 등 (zombie.js)
+      zombie: {
+        horde: null, siege: null, pursuit: null,
+        lastNightIdx: LS.Clock.rolloverIndex(s.hour * 60) - 1,   // 마지막 밤 등장 '날' (처음은 전날로 쳐서 1일째 밤 = 2일차)
+        hidOnce: false,                // 30분 결정에서 숨어 넘겼다 → 다음 30분 결정은 확정 발각
+        leaveCost: 0,                  // 밤 30분 전 떠나기 내구도 대가 (출발할 때 적용)
+        breakout: false,               // 포위 돌파를 골랐다 (지도에서 출발하면 적용)
+        history: []                    // 개발 확인용 (화면에는 안 보임)
+      },
       fired: {},                       // 이미 일어난 예정 사건
       log: [],
       logFilter: 'all',                // all | important
@@ -102,17 +115,21 @@ LS.State = (function () {
     return r.food + r.fresh.reduce((a, b) => a + b.amount, 0);
   }
 
-  function killMember(state, id) {
+  // how: 'dead' 숨짐 | 'turned' 감염 전환 | 'left' 하차 (하차는 사망 충격 없음)
+  function killMember(state, id, how) {
+    how = how || 'dead';
     const idx = state.crew.findIndex((m) => m.id === id);
     if (idx < 0) return;
     const m = state.crew[idx];
     // 진행 중인 작업에서 빼낸다
     state.tasks.forEach((t) => { t.members = t.members.filter((x) => x !== id); });
+    state.tasks = state.tasks.filter((t) => t.members.length);
     state.crew.splice(idx, 1);
-    state.dead.push({ id, minute: state.minute });
-    addLog(state, `${LS.Rules.josa(LS.CHARACTERS[id].name, '이가')} 숨졌다.`, true, 'body');
-    state.crew.forEach((o) => { o.mental = Math.max(0, o.mental + LS.CONFIG.shock.death); });
-    if (id === 'yoon_jaeha') state.protagonistDead = true;
+    state.dead.push({ id, minute: state.minute, how });
+    const nm = LS.CHARACTERS[id].name;
+    if (how === 'dead') addLog(state, `${LS.Rules.josa(nm, '이가')} 숨졌다.`, true, 'body');
+    if (how !== 'left') state.crew.forEach((o) => { o.mental = Math.max(0, o.mental + LS.CONFIG.shock.death); });
+    if (id === 'yoon_jaeha' && how !== 'left') state.protagonistDead = true;
     return m;
   }
 

@@ -39,7 +39,7 @@ LS.Dialog = (function () {
     phase = 'lines';
     $('dlg-title').textContent = `사건 · ${ev.title} · ${LS.Clock.fullLabel(state.minute)}`;
     $('dialog').classList.remove('hidden');
-    logEntry = LS.State.addLog(state, ev.title, true, 'event');
+    logEntry = LS.State.addLog(state, ev.title, true, 'event', ev.logDetail || '');
     LS.UI.renderLog();
     LS.UI.renderControls();
     showLine();
@@ -90,7 +90,9 @@ LS.Dialog = (function () {
 
   function choose(i) {
     chosen = ev.choices[i];
-    if (logEntry && ev.choices.length > 1) logEntry.detail = `선택: ${chosen.label}`;
+    if (logEntry && ev.choices.length > 1) logEntry.detail = [logEntry.detail, `선택: ${chosen.label}`].filter(Boolean).join(' · ');
+    // resolve: 고른 순간 결과를 정하고 그 결과 대사를 보여준다 (예: 전투 결과)
+    if (chosen.resolve) chosen.result = Object.assign({}, chosen.result || {}, chosen.resolve(state) || {});
     const r = chosen.result || {};
     pages = (r.lines || []).slice();
     idx = 0;

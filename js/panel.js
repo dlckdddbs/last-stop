@@ -10,6 +10,7 @@ LS.Panel = (function () {
   let current = null;        // { kind, arg }
   const sel = {};            // 작업 키 → 고른 인원
   const hours = {};          // 작업 키 → 휴식·수면 시간
+  const clearSleep = {};     // 건물 id → 좀비를 처리한 뒤 그대로 잘지
   let driverSel = null;
 
   function init(s) { state = s; bind(); }
@@ -33,11 +34,16 @@ LS.Panel = (function () {
   function hoursLabel(m) { return R().hoursLabel(m); }
 
   // 이 일을 지금 못 하는 이유 (있으면 선택지에서 빼고 '제외' 줄에만 보여준다)
-  function excludeReason(type, m) {
+  function excludeReason(type, m, key) {
     if (m.task) return '작업 중';
     const d = LS.Tasks.DEF[type];
+    const inf = R().infectionStage(state, m);
+    if (inf === '악화' && !d.isSleep) return '감염 악화';
+    const fights = key && key.indexOf('clear:') === 0;   // 잠자리 건물 안의 좀비 처리는 싸울 수 있어야 한다
+    if (fights && !R().canHeavy(state, m)) return m.energy <= LS.CONFIG.energy.heavyMin ? '기력 30 이하' : '싸울 수 없음';
+    if (fights && !R().canOutside(state, m)) return R().isPoisoned(state, m) ? '식중독' : inf ? '감염' : 'HP 낮음';
     if (d.heavy && !R().canHeavy(state, m)) return m.energy <= LS.CONFIG.energy.heavyMin ? '기력 30 이하' : 'HP 낮음';
-    if (d.outside && !d.noWork && !R().canOutside(state, m)) return R().isPoisoned(state, m) ? '식중독' : 'HP 낮음';
+    if (d.outside && !d.noWork && !R().canOutside(state, m)) return R().isPoisoned(state, m) ? '식중독' : inf === '발열' ? '감염 발열' : 'HP 낮음';
     return '';
   }
 
@@ -60,8 +66,8 @@ LS.Panel = (function () {
     return d.multi ? state.crew.length : d.crew;
   }
 
-  function defaultSel(type, max) {
-    const ok = state.crew.filter((m) => !excludeReason(type, m));
+  function defaultSel(type, max, key) {
+    const ok = state.crew.filter((m) => !excludeReason(type, m, key));
     const tired = (m) => m.energy < LS.CONFIG.energy.seatRest.cap;   // 좌석 휴식(80까지)으로 모자란 사람
     if (type === 'sleep_bed') {
       // 환자용 침상: 식중독·HP 낮은 사람부터, 없으면 가장 지친 사람
@@ -69,6 +75,8 @@ LS.Panel = (function () {
       return (sick.length ? sick : ok.filter(tired).sort((a, b) => a.energy - b.energy)).slice(0, max).map((m) => m.id);
     }
     if (type === 'watch') return ok.slice().sort((a, b) => b.energy - a.energy).slice(0, 2).map((m) => m.id);
+    if (key && key.indexOf('clear:') === 0) return ok.slice().sort((a, b) => b.energy - a.energy).map((m) => m.id);   // 처리는 갈 수 있는 사람 모두
+
     if (LS.Tasks.DEF[type].isSleep) return ok.filter(tired).slice(0, max).map((m) => m.id);
     return ok.slice(0, max).map((m) => m.id);
   }
@@ -78,7 +86,7 @@ LS.Panel = (function () {
     const ok = [];
     const out = [];
     state.crew.forEach((m) => {
-      const why = excludeReason(type, m);
+      const why = excludeReason(type, m, key);
       if (why) out.push(`${R().name(m.id)} (${why})`); else ok.push(m);
     });
     let html = ok.length ? '<div class="chips">' + ok.map((m) => {
@@ -94,8 +102,8 @@ LS.Panel = (function () {
 
   // 고른 사람 중 그 사이 못 하게 된 사람은 빼고, 비면 다시 기본 선택
   function cleanSel(key, type, max) {
-    const list = (sel[key] || []).filter((id) => { const m = R().member(state, id); return m && !excludeReason(type, m); });
-    sel[key] = list.length ? list.slice(0, Math.max(1, max)) : defaultSel(type, max);
+    const list = (sel[key] || []).filter((id) => { const m = R().member(state, id); return m && !excludeReason(type, m, key); });
+    sel[key] = list.length ? list.slice(0, Math.max(1, max)) : defaultSel(type, max, key);
   }
 
   // 아침 6시까지 남은 시간. after: 그만큼 뒤에 잠들 때 (잠자리 건물은 가는 길·확인 뒤)
@@ -127,7 +135,7 @@ LS.Panel = (function () {
     const max = maxFor(type);
     cleanSel(key, type, max);
     const o = Object.assign({}, opts);
-    const pickHours = d.timed || type === 'shelter';
+    const pickHours = d.timed || (type === 'shelter' && (!opts.clear || opts.sleepAfter));
     if (pickHours) o.hours = hours[key] || defHours(type);
     const p = LS.Tasks.preview(state, type, sel[key], o);
     // 잠·경계는 위 설명으로 충분하니 숫자 줄을 따로 쓰지 않는다
@@ -138,7 +146,7 @@ LS.Panel = (function () {
       if (p.mistake != null) info.push(`실수 확률 ${Math.round(p.mistake * 100)}%`);
     }
     let sub = opts.sub || '';
-    if (type === 'shelter' && opts.needCheck) sub = p.checker ? `<div class="act-sub">확인: ${esc(R().name(p.checker.id))} <small>(고른 사람 중 기력이 가장 많은 사람)</small></div>` : '';
+    if (type === 'shelter' && opts.needCheck) sub = p.checker ? `<div class="act-sub">확인·바리케이드: ${esc(R().name(p.checker.id))} <small>(고른 사람 중 기력이 가장 많은 사람${(sel[key] || []).length === 1 ? ' · 혼자 가면 안에 좀비가 있을 때 돌아온다' : ''})</small></div>` : '';
     const warn = !p.reason && LS.Tasks.wouldEmptyBus(state, type, sel[key]) ? '<div class="act-warn">모두 밖으로 나가요. 버스가 비고 엔진이 꺼져요.</div>' : '';
     const need = d.multi ? (type === 'sleep_bed' ? `침상 ${max}개` : `${d.crew}명 이상`) : d.crew + '명';
     const help = opts.help || d.help;
@@ -149,7 +157,7 @@ LS.Panel = (function () {
       (info.length ? `<div class="act-info">${info.join(' · ')}</div>` : '') + warn +
       (p.reason ? `<div class="act-reason">${esc(p.reason)}</div>` : '') +
       `<button class="act-go" data-act="start" data-key="${esc(key)}" data-type="${type}"` +
-      `${opts.spotId ? ` data-spot="${opts.spotId}"` : ''}${opts.routeKey ? ` data-route="${opts.routeKey}"` : ''} ${p.reason ? 'disabled' : ''}>시작</button></div>`;
+      `${opts.spotId ? ` data-spot="${opts.spotId}"` : ''}${opts.routeKey ? ` data-route="${opts.routeKey}"` : ''}${opts.clear ? ' data-clear="1"' : ''} ${p.reason ? 'disabled' : ''}>시작</button></div>`;
   }
 
   function runningTasks(filter) {
@@ -173,7 +181,9 @@ LS.Panel = (function () {
     const c = LS.CHARACTERS[id];
     const stage = R().mentalStage(m.mental);
     const cls = stage === '안정' ? '' : stage === '동요' ? 'shaken' : 'broken';
-    const status = R().isPoisoned(state, m) ? `식중독 (${hoursLabel(m.poisonUntil - state.minute)} 남음)` : m.status;
+    const inf = R().infectionStage(state, m);
+    const status = inf ? `감염 · ${inf} (전환까지 ${hoursLabel(Math.max(0, LS.CONFIG.infection.turnH * 60 - (state.minute - m.infectedAt)))})${m.isolated ? ' · 격리 좌석' : ''}`
+      : R().isPoisoned(state, m) ? `식중독 (${hoursLabel(m.poisonUntil - state.minute)} 남음)` : m.status;
     return `<div class="det-head"><img src="${LS.ASSETS.portraits[id]}" alt=""><div><div class="det-name">${esc(c.name)}</div><div class="det-role">${esc(c.role)}</div></div></div>` +
       stat('HP', m.hp, 100, 'hp') + stat('기력', m.energy, 100, 'energy') +
       `<div class="stat"><div class="stat-row"><span>정신력</span><span class="mental-tag ${cls}">${stage}</span></div></div>` +
@@ -203,23 +213,40 @@ LS.Panel = (function () {
       html += actionBlock('farm:' + spotId, 'farm', `파밍 (${T.hours}시간 기준)`, { spotId });
       return html;
     }
-    // 잠자리 건물: 확인하고 자기 하나만 (확인한 뒤에는 바로 가서 자기)
+    // 잠자리 건물: 처음엔 확인·바리케이드 설치 후 자기, 바리케이드를 친 뒤에는 누구든 나중에 따로 가서 자기
     html += guideCard('rest');
     html += `<div class="pn-info">${esc(LS.World.buildingHint(spot))}</div>`;
     const b = spot.building;
-    if (b.checked && b.threat) return html;
-    if (state.tasks.some((t) => t.type === 'shelter' && t.spotId === spotId)) return html;
+    if (b.abandoned) return html + '<div class="pn-info dim">포기한 건물이에요.</div>';
+    const securing = state.tasks.some((t) => t.type === 'shelter' && t.spotId === spotId && (t.phase === 'check' || t.phase === 'hold' || t.phase === 'clear' || (t.clear && t.phase === 'walk')));
+    if (securing) return html + '<div class="pn-info dim">먼저 간 사람이 안을 정리하고 바리케이드를 다 치면, 남은 사람도 나중에 따로 와서 잘 수 있어요.</div>';
     const E = LS.CONFIG.energy;
     const total = LS.CONFIG.shelter.checkTotalMin;
+    if (b.checked && b.threat) {
+      // 안에 좀비가 있다: 사람을 보내 처리한다. 인원이 많을수록 안전하다
+      const key = 'clear:' + spotId;
+      const n = Math.max(1, (sel[key] || []).length);
+      const sleepAfter = !!clearSleep[spotId];
+      html += actionBlock(key, 'shelter', '안의 좀비 처리하러 가기', {
+        spotId, clear: true, sleepAfter, after: spot.walk + LS.CONFIG.zombie.fight.minutes,
+        help: `걸어가서(${spot.walk}분) 안의 좀비를 처리하고, 정리하며 바리케이드를 쳐요 (${LS.CONFIG.zombie.fight.minutes}분). 많이 갈수록 안전해요: 1명은 위험이 높고, 2명은 어느 정도, 3명부터는 웬만해선 안 다쳐요.`,
+        sub: `<div class="act-sub">위험: ${esc(LS.Zombie.clearRiskText(n))}</div>` +
+          '<div class="hours">처리한 뒤: ' +
+          `<button class="mini ${sleepAfter ? '' : 'on'}" data-act="clearsleep" data-spot="${spotId}" data-v="0">버스로 돌아온다</button>` +
+          `<button class="mini ${sleepAfter ? 'on' : ''}" data-act="clearsleep" data-spot="${spotId}" data-v="1">그대로 잔다</button></div>`
+      });
+      return html;
+    }
     if (!b.checked) {
       html += actionBlock('shelter:' + spotId, 'shelter', '확인하고 자기', {
         spotId, needCheck: true, after: total,
-        help: `다 같이 걸어가서 한 명이 안을 확인하고(가는 길 포함 ${total}분), 안전하면 바로 자요. 기력 +${E.sleepBuilding.rate}/시간 · 깊은 잠. 일어나면 버스로 돌아와요(${spot.walk}분).`
+        help: `잘 사람들이 걸어가서, 한 명이 안을 확인하고 입구·창문에 바리케이드를 쳐요 (가는 길 포함 ${total}분). 끝나면 바로 자요. 기력 +${E.sleepBuilding.rate}/시간 · 깊은 잠. 일어나면 버스로 돌아와요(${spot.walk}분).`
       });
     } else {
-      html += actionBlock('shelter:' + spotId, 'shelter', '건물에서 자기', {
+      const there = state.tasks.filter((t) => t.type === 'shelter' && t.spotId === spotId);
+      html += actionBlock('shelter:' + spotId, 'shelter', there.length ? '나중에 따로 가서 자기' : '건물에서 자기', {
         spotId, after: spot.walk,
-        help: `걸어가서(${spot.walk}분) 바로 자요. 기력 +${E.sleepBuilding.rate}/시간 · 깊은 잠. 일어나면 버스로 돌아와요.`
+        help: `바리케이드를 쳐 둔 곳이라 확인 없이 걸어가서(${spot.walk}분) 바로 자요. 기력 +${E.sleepBuilding.rate}/시간 · 깊은 잠. 일어나면 버스로 돌아와요.${there.length ? ' 먼저 간 사람들과 따로 일어나 따로 돌아와요.' : ''}`
       });
     }
     return html;
@@ -363,7 +390,32 @@ LS.Panel = (function () {
     return html;
   }
 
-  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp };
+  // ---------- 버스 정비 ----------
+  function buildRepair() {
+    const b = state.bus;
+    const RP = LS.CONFIG.repair;
+    let html = '<div class="pn-title">버스 정비</div><div class="pn-sub">기본 수리</div>';
+    html += `<div class="pn-rows"><div>내구도 ${b.durability} / ${b.maxDurability}${b.durability <= 0 ? ' · <b class="warn-text">멈춤: 정비해야 움직일 수 있다</b>' : ''}</div><div>부품 ${state.resources.parts}개 (수리 1번에 ${RP.parts}개)</div></div>`;
+    html += '<div class="pn-info dim">포위되면 내구도가 시간마다 깎여요. 0이 되면 무리가 안으로 들어오고 버스가 멈춰요.</div>';
+    html += runningTasks((t) => t.type === 'repair');
+    html += actionBlock('repair', 'repair', `기본 수리 (내구도 +${RP.amount})`);
+    return html;
+  }
+
+  // ---------- 포위 대응 ----------
+  function buildSiege() {
+    const s = state.zombie.siege;
+    if (!s) return null;
+    const S = LS.Zombie.sizeOf(s.size);
+    let html = `<div class="pn-title">포위</div><div class="pn-sub">${esc(S.label)} ${s.count}마리</div>`;
+    html += `<div class="pn-safety bad">남은 ${hoursLabel(Math.max(0, s.endsAt - state.minute))} · 내구도 -${S.dmg}/시간 (지금 ${state.bus.durability})</div>`;
+    html += '<div class="pn-info">버스 안 사람은 내구도가 0이 되기 전에는 물리지 않아요. 포위 중에는 밖에 나갈 수 없어요.</div>';
+    html += '<div class="siege-acts">' + LS.Zombie.siegeChoices(state).map((c, i) =>
+      `<button class="act-go" data-act="siege" data-i="${i}" ${c.disabled ? 'disabled' : ''}>${esc(c.label)}<small>${esc(c.desc || '')}</small></button>`).join('') + '</div>';
+    return html;
+  }
+
+  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp, repair: buildRepair, siege: buildSiege };
 
   function render() {
     const box = $('panel');
@@ -389,14 +441,24 @@ LS.Panel = (function () {
       const act = b.dataset.act;
       if (act === 'close') { close(); LS.UI.renderCrew(); return; }
       if (act === 'guide-ok') { state.guides[b.dataset.guide] = true; render(); return; }
+      if (act === 'siege') {
+        const c = LS.Zombie.siegeChoices(state)[Number(b.dataset.i)];
+        if (!c || c.disabled) return;
+        if (c.run) c.run(state);
+        if (state.screen !== 'outside') close();
+        LS.UI.renderAll();
+        return;
+      }
       if (act === 'toggle') { toggle(b.dataset.key, b.dataset.id, Number(b.dataset.max)); render(); return; }
       if (act === 'hours') { hours[b.dataset.key] = parseFloat(b.dataset.h); render(); return; }
+      if (act === 'clearsleep') { clearSleep[b.dataset.spot] = b.dataset.v === '1'; render(); return; }
       if (act === 'driver') { driverSel = b.dataset.id; render(); return; }
       if (act === 'start') {
         const type = b.dataset.type;
         const key = b.dataset.key;
         const opts = { spotId: b.dataset.spot, routeKey: b.dataset.route };
         if (LS.Tasks.DEF[type].timed || type === 'shelter') opts.hours = hours[key] || defHours(type);
+        if (b.dataset.clear) { opts.clear = true; opts.sleepAfter = !!clearSleep[b.dataset.spot]; }
         const res = LS.Tasks.start(state, type, sel[key] || [], opts);
         if (res.error) LS.UI.toast(res.error);
         else if (state.guides.time && state.hints.assigned < 2) {
@@ -414,6 +476,7 @@ LS.Panel = (function () {
         if (res.error) { LS.UI.toast(res.error); return; }
         close();
         LS.UI.renderAll();
+        (res.toasts || []).forEach((t) => LS.UI.toast(t, { sticky: true }));
         LS.Guide.check();
         return;
       }

@@ -49,6 +49,8 @@ LS.Travel = (function () {
 
   function departBlockReason(state, toId, driverId) {
     if (state.travel) return '이미 이동 중이다';
+    if (state.zombie.siege && !state.zombie.breakout) return '포위 중이다. 돌파를 골라야 떠날 수 있다';
+    if (state.bus.durability <= 0) return '버스가 멈췄다 (내구도 0). 정비가 필요하다';
     const outside = state.crew.find((m) => m.task && LS.Tasks.DEF[LS.Tasks.find(state, m.task).type].outside);
     if (outside) return `${LS.Rules.josa(R().name(outside.id), '이가')} 밖에 있다. 돌아와야 출발할 수 있다`;
     const p = plan(state, toId, driverId);
@@ -86,6 +88,7 @@ LS.Travel = (function () {
     }
     travel.driverId = driverId || drivers(state)[0].id;
     travel.startedAt = state.minute;
+    const toasts = LS.Zombie.onDepart(state, travel.driverId);   // 밤 떠나기·포위 돌파 대가, 추격 기록
     state.travel = travel;
     state.roadside = null;
     delete state.places.roadside;
@@ -93,14 +96,57 @@ LS.Travel = (function () {
     state.bus.engineOn = true;
     state.screen = 'travel';
     LS.State.addLog(state, `${LS.Rules.josa(LS.LOCATIONS[travel.to].name, '으로')} 출발`, true, 'travel', `${fromLabel}에서 · 운전 ${R().name(travel.driverId)}`);
-    return { ok: true };
+    return { ok: true, toasts };
   }
+
+  // ---------- 떠나고 돌아오기 (15장): 무리가 흩어질 때까지 버스를 몰고 돌다 같은 자리로 돌아온다 ----------
+  // 떠날 때는 잠자리 건물에 간 사람 말고는 모두 불러들이므로, 하던 일이 있어도 운전자 후보로 친다
+  function loopDriver(state) {
+    const ds = state.crew.filter((m) => {
+      const t = m.task ? LS.Tasks.find(state, m.task) : null;
+      return R().canDrive(state, m) && !(t && t.type === 'shelter');
+    });
+    return ds.find(isExpert) || ds.sort((a, b) => b.energy - a.energy)[0] || null;
+  }
+
+  function loopBlock(state) {
+    const d = loopDriver(state);
+    if (!d) return '운전할 수 있는 사람이 없다';
+    const mins = C().zombie.loopMin;
+    const need = C().fuel.drivePerHour * mins / 60;
+    if (state.resources.fuel < need) return `연료가 모자라다 (${R().round1(need)}단위 필요)`;
+    const drain = -(isExpert(d) ? C().energy.driveExpert : C().energy.drive) * mins / 60;
+    if (d.energy - drain <= C().driver.minEnergy) return `${R().name(d.id)}의 기력으로는 ${R().hoursLabel(mins)} 운전을 버티지 못한다`;
+    return '';
+  }
+
+  function departLoop(state) {
+    if (state.travel) return { error: '이미 이동 중이다' };
+    if (state.bus.durability <= 0) return { error: '버스가 멈췄다 (내구도 0)' };
+    const block = loopBlock(state);
+    if (block) return { error: block };
+    state.tasks.slice().forEach((t) => { if (LS.Tasks.DEF[t.type].timed) LS.Tasks.abort(state, t.id); });
+    const d = loopDriver(state);
+    const loc = LS.State.location(state);
+    const toasts = LS.Zombie.onDepart(state, d.id);
+    state.travel = {
+      loop: true, key: null, from: state.locationId, to: state.locationId, name: loc.name, mapPos: loc.map,
+      total: C().zombie.loopMin, progress: 0, event: null, mistake: null, driverId: d.id, startedAt: state.minute
+    };
+    state.locationId = null;
+    state.bus.engineOn = true;
+    state.screen = 'travel';
+    LS.State.addLog(state, '버스를 몰고 돌며 무리가 흩어지길 기다린다', true, 'travel', `${loc.name} · ${R().hoursLabel(C().zombie.loopMin)} · 운전 ${R().name(d.id)} · 하던 일은 그대로 남는다`);
+    return { ok: true, toasts };
+  }
+
+  function locName(id) { return id === 'roadside' ? '도로 위' : LS.LOCATIONS[id].name; }
 
   function etaMinutes(state) {
     const t = state.travel;
     if (!t) return 0;
     const d = R().member(state, t.driverId);
-    return Math.ceil((t.pause || 0) + (t.total - t.progress) / (d ? speed(d) : 1));
+    return Math.ceil((t.pause || 0) + (t.total - t.progress) / (d && !t.loop ? speed(d) : 1));
   }
 
   // 다음으로 무언가 일어날 때까지 남은 분: 도착·도로 사건·운전 실수·기력 30·연료 바닥
@@ -108,7 +154,7 @@ LS.Travel = (function () {
     const t = state.travel;
     const d = R().member(state, t.driverId);
     if (!d) return 0;
-    const sp = speed(d);
+    const sp = t.loop ? 1 : speed(d);
     const pause = t.pause || 0;
     const cands = [(t.total - t.progress) / sp];
     if (t.event && !t.event.done && t.event.at > t.progress) cands.push((t.event.at - t.progress) / sp);
@@ -138,7 +184,7 @@ LS.Travel = (function () {
       return out;
     }
     const before = t.progress;
-    t.progress = Math.min(t.total, t.progress + dt * speed(driver));
+    t.progress = Math.min(t.total, t.progress + dt * (t.loop ? 1 : speed(driver)));
     state.resources.fuel = Math.max(0, state.resources.fuel - C().fuel.drivePerHour * dt / 60);
     R().applyDrain(driver, isExpert(driver) ? C().energy.driveExpert : C().energy.drive, dt);
     const kinds = restKinds(state, driver.id);
@@ -155,6 +201,11 @@ LS.Travel = (function () {
       return out;
     }
     if (t.progress >= t.total - 1e-6) { out.push(...arrive(state)); return out; }
+    if (t.loop) {
+      // 돌고 오는 중에는 도로 위에 서지 않는다 (출발할 때 연료·기력을 확인했다)
+      if (state.resources.fuel <= 1e-6) { state.resources.fuel = 0; out.push(...arrive(state)); }
+      return out;
+    }
     if (state.resources.fuel <= 1e-6) {
       state.resources.fuel = 0;
       stopRoadside(state, 'fuel');
@@ -191,10 +242,20 @@ LS.Travel = (function () {
 
   function arrive(state) {
     const t = state.travel;
+    if (t.loop) {
+      state.locationId = t.to;
+      state.travel = null;
+      state.bus.engineOn = false;
+      state.screen = 'outside';
+      LS.Zombie.beginStop(state);
+      LS.State.addLog(state, `${LS.Rules.josa(t.name, '으로')} 돌아왔다`, true, 'travel', '무리는 흩어졌다 · 하던 일은 그대로 남아 있다');
+      return [{ stop: true, toast: `${LS.Rules.josa(t.name, '으로')} 돌아왔다. 무리는 흩어졌다.` }];
+    }
     const loc = LS.LOCATIONS[t.to];
     state.locationId = t.to;
     state.travel = null;
     state.bus.engineOn = false;
+    LS.Zombie.beginStop(state);
     state.routes[t.key].traveled = true;
     state.places[t.to].visited = true;
     state.screen = 'outside';
@@ -223,6 +284,7 @@ LS.Travel = (function () {
     state.locationId = 'roadside';
     state.bus.engineOn = false;
     state.screen = 'outside';
+    LS.Zombie.beginStop(state);
     const why = { block: '길이 막혀', fuel: '연료가 떨어져', fatigue: '운전자가 지쳐', nodriver: '운전자가 없어' }[reason] || '';
     LS.State.addLog(state, `${why} 도로 위에 멈췄다`, true, 'travel', `${LS.LOCATIONS[t.from].name} → ${LS.LOCATIONS[t.to].name} · ${R().hoursLabel(t.progress)}째 지점`);
   }
@@ -301,7 +363,7 @@ LS.Travel = (function () {
         `${R().name(driver.id)} 기력 ${Math.round(driver.energy)}`,
         `남은 운전: 약 ${R().hoursLabel(etaMinutes(state))}`,
         others.length ? `교대 가능한 사람: ${others.map((o) => R().name(o.id)).join(', ')}` : '교대할 수 있는 사람이 없다',
-        '도로 위에 멈추면 좀비가 알아챌 수 있다 (3단계)'
+        '도로 위에 30분 넘게 멈추면 좀비 등장 판정을 한다'
       ],
       choices
     };
@@ -323,7 +385,7 @@ LS.Travel = (function () {
         { speaker: 'narration', text: '도시 외곽의 끝. 이 너머가 주거 지역이다.' },
         { speaker: 'park_seoyun', text: '여기서부터는 사람이 더 많았던 곳이에요. 좀비도요.' }
       ],
-      observations: ['2단계 시험판은 도시 외곽까지예요.', '주거 지역은 이후 단계에서 열립니다.'],
+      observations: ['지금 시험판은 도시 외곽까지예요.', '주거 지역은 이후 단계에서 열립니다.'],
       choices: [{ label: '주변을 둘러본다' }]
     };
   }
@@ -331,6 +393,7 @@ LS.Travel = (function () {
   function position(state) {
     const t = state.travel;
     if (!t) return null;
+    if (t.loop) return t.mapPos;
     const a = LS.LOCATIONS[t.from].map;
     const b = LS.LOCATIONS[t.to].map;
     const f = t.total ? t.progress / t.total : 0;
@@ -360,5 +423,5 @@ LS.Travel = (function () {
     });
   }
 
-  return { options, plan, depart, departBlockReason, drivers, etaMinutes, nextMilestone, advance, position, speed, passengerRest, restKind };
+  return { options, plan, depart, departBlockReason, drivers, etaMinutes, nextMilestone, advance, position, speed, passengerRest, restKind, departLoop, loopBlock, locName };
 })();

@@ -143,8 +143,9 @@ LS.World = (function () {
   function buildingHint(spot) {
     if (!spot.building) return '';
     const walk = spot.walk ? ` · 버스에서 걸어서 ${spot.walk}분` : '';
+    if (spot.building.abandoned) return `안에 좀비가 있어 포기했다${walk}`;
     if (!spot.building.checked) return `안은 아직 모름 (숨은 위협 가능)${walk}`;
-    return spot.building.threat ? '숨은 위협 있음 · 쓸 수 없음 (대응은 3단계)' : `안전 확인됨${walk}`;
+    return spot.building.threat ? `안에 좀비가 있다 · 처리해야 잘 수 있다${walk}` : `바리케이드를 쳐 둠 · 바로 잘 수 있다${walk}`;
   }
 
   // 화면에 보이는 건물만 (없는 잠자리 건물은 뺀다)

@@ -24,22 +24,26 @@ LS.Tasks = (function () {
     // 잠자리 건물: 가는 길+내부 확인(1시간) → 잠 → 버스로 돌아오기. 확인한 뒤에는 가는 길 → 잠 → 돌아오기
     shelter:         { label: '잠자리',          crew: 1, multi: true, outside: true, noWork: true, isSleep: true },
     camp:            { label: '침낭 수면',       crew: 1, multi: true, timed: true, rest: 'sleepBag', outside: false, noWork: true, isSleep: true,
-                       help: '버스 옆에 침낭을 깔고 바로 자요. 기력 +3/시간. 정찰(경보 함정)이나 경계 2명이 없으면 자다가 습격받을 수 있어요.' },
+                       help: '버스 옆에 침낭을 깔고 바로 자요. 기력 +3/시간. 무리가 와도 정찰(경보 함정)이 있으면 2시간 전에, 경계 2명이 있으면 30분 전에 깨워 줘요. 둘 다 없으면 모르고 자다가 다치거나 물릴 수 있어요.' },
     watch:           { label: '경계',            crew: 2, multi: true, timed: true, drain: 'light', outside: false,
                        help: '2명 이상이 깨어서 망을 봐요. 기력 -3/시간, 그동안 잘 수 없어요. 경계가 서 있으면 침낭으로 자도 안전해요.' },
     sleep_bed:       { label: '환자용 침상 수면', crew: 1, multi: true, timed: true, rest: 'sleepBed', outside: false, noWork: true, isSleep: true,
                        help: '버스 안 환자용 침상(1개)에 누워서 자요. 기력 +3/시간. 식중독·부상인 사람을 먼저 눕혀요.' },
     talk:            { label: '회복 대화',       crew: 2, minutes: 60,  outside: false, noSlow: true,
-                       help: '두 사람이 1시간 이야기해요. 정신력이 낮은 쪽 +5, 상대 +2 (각자 하루 1회).' }
+                       help: '두 사람이 1시간 이야기해요. 정신력이 낮은 쪽 +5, 상대 +2 (각자 하루 1회).' },
+    repair:          { label: '버스 정비',       crew: 1, minutes: 180, drain: 'heavy', mistake: 'repair', heavy: true, outside: true,
+                       help: '부품 2개로 버스를 손봐요. 3시간 · 내구도 +15. 부품은 시작할 때 써요.' },
+    fight:           { label: '무리 정리',       crew: 1, multi: true, minutes: 30, outside: true, noSlow: true, system: true }
   };
 
-  const PHASE = { check: '확인 중', walk: '가는 중', sleep: '자는 중', return: '돌아오는 중' };
+  const PHASE = { check: '확인·바리케이드 치는 중', walk: '가는 중', sleep: '자는 중', return: '돌아오는 중', hold: '위협 앞에서', clear: '정리·바리케이드 치는 중' };
 
   // 실수 결과 (07장 표)
   const SEVERITY = {
     scout:    { minor: { text: '소음을 냈다. 주변 위험이 커졌다.', noise: true }, injury: { hp: -5 }, major: { hp: -15 } },
     farm:     { minor: { text: '물자 일부를 잃었다. (20% 손실)', loss: 0.2 }, injury: { hp: -5 }, major: { hp: -15 } },
-    obstacle: { minor: { text: '작업이 30분 늦어졌다.', delay: 30 },         injury: { hp: -8 }, major: { hp: -20 } }
+    obstacle: { minor: { text: '작업이 30분 늦어졌다.', delay: 30 },         injury: { hp: -8 }, major: { hp: -20 } },
+    repair:   { minor: { text: '작업이 30분 늦어졌다.', delay: 30 },         injury: { hp: -5 }, major: { hp: -15 } }
   };
 
   function def(type) { return DEF[type]; }
@@ -65,10 +69,10 @@ LS.Tasks = (function () {
   // 침낭이 안전한가: 이 장소를 정찰했거나(경보 함정), 경계가 2명 이상 서 있다
   function campSafety(state) {
     const place = LS.State.place(state);
-    if (place && place.scouted) return { safe: true, why: '정찰함 (경보 함정)' };
+    if (place && place.scouted) return { safe: true, why: '정찰함: 무리가 2시간 거리에 오면 경보 함정이 깨운다' };
     const w = Math.max(watchersAtStart, watchers(state));
-    if (w >= 2) return { safe: true, why: `경계 ${w}명` };
-    return { safe: false, why: w === 1 ? '경계 1명 (2명 이상 필요)' : '정찰·경계 없음' };
+    if (w >= 2) return { safe: true, why: `경계 ${w}명: 무리가 30분 거리에 오면 깨운다` };
+    return { safe: false, why: w === 1 ? '경계 1명 (2명 이상 필요)' : '정찰·경계 없음: 무리가 와도 모른다' };
   }
 
   // Sim이 매 진행 구간마다 작업보다 먼저 부른다 (경계가 이번 구간에 끝나도 그 구간은 지켜 준 것으로 친다)
@@ -100,6 +104,13 @@ LS.Tasks = (function () {
     if (ms.some((m) => !m)) return '없는 인원이 있다';
     const busy = ms.find((m) => m.task);
     if (busy) return `${josa(R().name(busy.id), '은는')} 다른 일을 하고 있다`;
+    if (d.outside && LS.Zombie.siegeActive(state)) return '포위 중에는 밖에 나갈 수 없다';
+    const worse = ms.find((m) => R().infectionStage(state, m) === '악화');
+    if (worse && !d.isSleep) return `${josa(R().name(worse.id), '은는')} 감염이 악화돼 누워 있어야 한다`;
+    if (type === 'repair') {
+      if (state.resources.parts < C().repair.parts) return `부품이 ${C().repair.parts}개 필요하다`;
+      if (state.bus.durability >= state.bus.maxDurability) return '내구도가 이미 가득하다';
+    }
     if (d.outside && !d.noWork) {
       const sick = ms.find((m) => !R().canOutside(state, m));
       if (sick) return `${josa(R().name(sick.id), '은는')} 밖에 나갈 수 없다 (${R().isPoisoned(state, sick) ? '식중독' : 'HP 낮음'})`;
@@ -117,8 +128,17 @@ LS.Tasks = (function () {
     }
     if (type === 'shelter') {
       if (!spot || !spot.building || spot.absent) return '잘 곳이 없다';
-      if (spot.building.checked && spot.building.threat) return '숨은 위협이 있어 쓸 수 없다';
-      if (state.tasks.some((t) => t.type === 'shelter' && t.spotId === opts.spotId)) return '이미 그 건물에 가 있다';
+      if (spot.building.abandoned) return '포기한 건물이다';
+      const threat = spot.building.checked && spot.building.threat;
+      if (threat && !opts.clear) return '안에 좀비가 있다. 먼저 처리해야 한다';
+      if (!threat && opts.clear) return '처리할 좀비가 없다';
+      if (opts.clear) {
+        const weak = ms.find((m) => !R().canHeavy(state, m) || !R().canOutside(state, m));
+        if (weak) return `${josa(R().name(weak.id), '은는')} 지금 싸울 수 없다 (기력 30 초과·밖에 나갈 수 있어야 함)`;
+      }
+      // 바리케이드를 친 뒤에는 다른 사람도 나중에 따로 가서 잘 수 있다. 확인·처리하는 중에는 기다린다
+      const busyHere = state.tasks.find((t) => t.type === 'shelter' && t.spotId === opts.spotId && (t.phase === 'check' || t.phase === 'hold' || t.phase === 'clear' || (t.clear && t.phase === 'walk')));
+      if (busyHere) return `먼저 간 사람이 안을 ${busyHere.clear ? '처리하는' : '확인하고 바리케이드를 치는'} 중이다 (약 ${R().hoursLabel(Math.max(0, busyHere.phaseEnd - state.minute))})`;
       if (!spot.building.checked && !checkerOf(state, ms)) return '안을 확인할 사람이 없다 (기력 30 초과, 밖에 나갈 수 있어야 함)';
     }
     if (type === 'sleep_bed') {
@@ -196,14 +216,23 @@ LS.Tasks = (function () {
       if (task.outcome === 'minor' && SEVERITY[d.mistake].minor.delay) task.workTotal += SEVERITY[d.mistake].minor.delay;
     }
     let detail = names(ms);
+    if (type === 'repair') {
+      state.resources.parts -= C().repair.parts;
+      detail += ` · 부품 -${C().repair.parts}`;
+    }
     if (type === 'shelter') {
       const spot = spotOf(state, task);
       task.walk = spot.walk;
       task.hours = opts.hours || 8;
-      if (!spot.building.checked) {
+      task.clear = !!opts.clear;                         // 안의 좀비를 처리하러 가는가
+      task.sleepAfter = !opts.clear || !!opts.sleepAfter; // 처리한 뒤 그대로 자는가
+      if (task.clear) {
+        setPhase(task, 'walk', state.minute);
+        detail += ` · 안의 좀비 처리 (${ms.length}명)${task.sleepAfter ? ' 후 잠' : ''}`;
+      } else if (!spot.building.checked) {
         task.checker = checkerOf(state, ms).id;
         setPhase(task, 'check', state.minute);
-        detail += ` · 확인: ${R().name(task.checker)}`;
+        detail += ` · 확인·바리케이드: ${R().name(task.checker)}`;
       } else {
         setPhase(task, 'walk', state.minute);
       }
@@ -211,15 +240,97 @@ LS.Tasks = (function () {
     if (d.isSleep) ms.forEach((m) => { m.sleepStreak = 0; });
     state.tasks.push(task);
     ms.forEach((m) => { m.task = task.id; });
-    LS.State.addLog(state, type === 'shelter' ? `${josa(spotLabel(state, task), '으로')} 자러 간다` : `${taskTitle(state, task)} 시작`, false, 'task', detail);
+    const shelterTitle = task.clear ? `${josa(spotLabel(state, task), '으로')} 좀비를 처리하러 간다` : `${josa(spotLabel(state, task), '으로')} 자러 간다`;
+    LS.State.addLog(state, type === 'shelter' ? shelterTitle : `${taskTitle(state, task)} 시작`, false, 'task', detail);
     updateBusPresence(state);
     return { task };
   }
 
   function setPhase(task, phase, now) {
     task.phase = phase;
-    const len = phase === 'check' ? C().shelter.checkTotalMin : phase === 'sleep' ? task.hours * 60 : task.walk;
+    const len = phase === 'check' ? C().shelter.checkTotalMin : phase === 'sleep' ? task.hours * 60
+      : phase === 'clear' ? C().zombie.fight.minutes : phase === 'hold' ? Infinity : task.walk;
     task.phaseEnd = now + len;
+  }
+
+  // 잠자리 건물 안의 숨은 위협 (08장 15%)
+  // 혼자 갔으면 돌아오고, 그 건물을 포기할지 사람을 보내 처리할지 정한다.
+  // 여럿이 갔으면 그 자리에서 물러나거나 처리한다. 인원이 많을수록 다칠 위험이 낮다 (2026-11-11 결정)
+  function threatEvent(state, task, ms) {
+    const title = spotLabel(state, task);
+    const spotId = task.spotId;
+    const team = ms.filter((m) => R().canHeavy(state, m) && R().canOutside(state, m));
+    const giveUp = {
+      label: '이 건물은 포기한다',
+      run: (s) => {
+        const sp = spotOf(s, task);
+        if (sp) sp.building.abandoned = true;
+        LS.State.addLog(s, `${title}: 포기했다`, false, 'task', '안에 좀비가 있다');
+      },
+      result: { lines: [{ speaker: 'narration', text: '오늘 밤은 다른 곳에서 자기로 했다.' }] }
+    };
+    if (ms.length === 1) {
+      const who = R().name(ms[0].id);
+      setPhase(task, 'return', state.minute);
+      return {
+        title: '안에 좀비가 있다', screen: 'outside',
+        lines: [
+          { speaker: 'narration', text: `${title} 안쪽에서 무언가 움직인다. 혼자서는 무리다. ${josa(who, '은는')} 조용히 문을 닫고 버스로 돌아온다.` }
+        ],
+        observations: [
+          `${who}: 버스로 돌아오는 중 (${task.walk}분)`,
+          '안에 좀비가 몇 마리 숨어 있다 (소규모)',
+          `사람을 보내 처리할 수 있다 · ${LS.Zombie.clearRiskText(1)} / ${LS.Zombie.clearRiskText(2)} / ${LS.Zombie.clearRiskText(3)}`
+        ],
+        choices: [
+          {
+            label: '사람을 보내 처리한다',
+            desc: '건물 패널에서 처리하러 갈 사람을 고른다',
+            run: () => setTimeout(() => LS.Panel.open('spot', spotId), 0),
+            result: { lines: [{ speaker: 'narration', text: '누구를 보낼지 정해야 한다.' }] }
+          },
+          giveUp
+        ]
+      };
+    }
+    const F = C().zombie.fight;
+    const ok = team.length >= 1;
+    return {
+      title: '숨은 위협', screen: 'outside',
+      lines: [
+        { speaker: 'narration', text: `${title} 안쪽에서 무언가 움직인다. ${josa(R().name(task.checker), '이가')} 손을 들어 멈추라고 한다.` },
+        { speaker: task.checker, text: '안에 몇 마리 있어요. 어떻게 할까요?' }
+      ],
+      observations: [
+        '안에 좀비가 몇 마리 숨어 있다 (소규모)',
+        ok ? `지금 처리: ${names(team)} · ${F.minutes}분 · ${LS.Zombie.clearRiskText(team.length)}` : '지금 싸울 수 있는 사람이 없다 (기력 30 초과)',
+        '물러나면 나중에 사람을 보내 처리할 수 있다'
+      ],
+      choices: [
+        {
+          label: '조용히 물러난다',
+          run: (s) => {
+            setPhase(task, 'return', s.minute);
+            LS.State.addLog(s, `${title}에서 물러났다`, false, 'task', `안에 좀비 · 버스로 돌아오는 중 (${task.walk}분)`);
+          },
+          result: { lines: [{ speaker: 'narration', text: '발소리를 죽이고 문을 닫았다. 버스로 돌아간다.' }] }
+        },
+        {
+          label: '지금 처리한다',
+          desc: ok ? `${names(team)} · ${F.minutes}분` : '싸울 수 있는 사람이 없다',
+          disabled: !ok,
+          resolve: (s) => {
+            const fs = team.filter((m) => R().member(s, m.id));
+            const notes = LS.Zombie.clearRoll(s, fs);
+            const spot = spotOf(s, task);
+            if (spot) spot.building.threat = false;
+            setPhase(task, 'clear', s.minute);
+            LS.State.addLog(s, `${title}: 안의 좀비를 처리했다`, true, 'task', notes.join(' · '));
+            return { lines: notes.map((t) => ({ speaker: 'narration', text: t })).concat([{ speaker: 'narration', text: '정리를 마쳤다. 입구에 바리케이드를 치고 잠자리를 편다.' }]) };
+          }
+        }
+      ]
+    };
   }
 
   function spotLabel(state, task) {
@@ -275,22 +386,39 @@ LS.Tasks = (function () {
     } else if (task.phase === 'sleep') {
       ms.forEach((m) => { R().applyRest(state, m, 'sleepBuilding', dt); sleepBonus(state, m, dt); });
     }
-    if (next < task.phaseEnd - 1e-6) return [];
+    if (task.phase === 'hold' || next < task.phaseEnd - 1e-6) return [];
     const title = spotLabel(state, task);
     const spot = spotOf(state, task);
     if (task.phase === 'check') {
       spot.building.checked = true;
       if (spot.building.threat) {
-        LS.State.addLog(state, `${title}: 숨은 위협`, true, 'task', `${josa(R().name(task.checker), '이가')} 확인 · 자지 않고 버스로 돌아온다 (위협 대응은 3단계)`);
-        setPhase(task, 'return', next);
-        return [{ stop: true, toast: `${title}: 안쪽에 숨은 위협이 있다. 자지 않고 돌아온다.`, important: true }];
+        LS.State.addLog(state, `${title}: 안에 무언가 있다`, true, 'task', `${josa(R().name(task.checker), '이가')} 확인하다 발견`);
+        setPhase(task, 'hold', next);
+        return [{ dialog: threatEvent(state, task, ms) }];
       }
-      LS.State.addLog(state, `${title}: 안전하다`, false, 'task', `${josa(R().name(task.checker), '이가')} 확인 · ${names(ms)} 잠듦 (${task.hours}시간)`);
+      LS.State.addLog(state, `${title}: 바리케이드를 쳤다`, false, 'task', `${josa(R().name(task.checker), '이가')} 안을 확인하고 입구·창문을 막았다 · ${names(ms)} 잠듦 (${task.hours}시간)`);
       setPhase(task, 'sleep', next);
       ms.forEach((m) => { m.sleepStreak = 0; });
-      return [{ toast: `${title}: 안전하다. ${josa(names(ms), '이가')} 잠들었다 (${task.hours}시간)` }];
+      return [{ toast: `${title}: 안전하다. 바리케이드를 치고 ${josa(names(ms), '이가')} 잠들었다 (${task.hours}시간)` }];
     }
-    if (task.phase === 'walk') {
+    if (task.phase === 'walk' && task.clear) {
+      // 처리하러 간 사람들이 도착: 인원에 따라 부상·물림 판정 → 30분 정리하고 바리케이드
+      if (spot.building.threat) {
+        const notes = LS.Zombie.clearRoll(state, ms);
+        spot.building.threat = false;
+        setPhase(task, 'clear', next);
+        LS.State.addLog(state, `${title}: 안의 좀비를 처리했다`, true, 'task', `${ms.length}명 · ${notes.join(' · ')}`);
+        return [{ stop: true, toast: `${title}: 안의 좀비를 처리했다 (${ms.length}명). ${notes.join(' · ')}`, important: true }];
+      }
+      setPhase(task, 'clear', next);
+      return [];
+    }
+    if (task.phase === 'clear' && task.clear && !task.sleepAfter) {
+      setPhase(task, 'return', next);
+      LS.State.addLog(state, `${title}: 바리케이드를 쳤다`, false, 'task', '이제 누구든 와서 바로 잘 수 있다 · 처리한 사람들은 버스로 돌아오는 중');
+      return [{ toast: `${title}: 정리하고 바리케이드를 쳤다. 이제 누구든 와서 바로 잘 수 있다.` }];
+    }
+    if (task.phase === 'walk' || task.phase === 'clear') {
       setPhase(task, 'sleep', next);
       ms.forEach((m) => { m.sleepStreak = 0; });
       return [];
@@ -299,23 +427,16 @@ LS.Tasks = (function () {
       setPhase(task, 'return', next);
       return [{ toast: `${title}: 일어났다. 버스로 돌아오는 중 (${task.walk}분)` }];
     }
+    // 돌아오는 길: 버스가 포위돼 있으면 건물에서 기다린다
+    const siege = state.zombie.siege;
+    if (siege) {
+      task.phaseEnd = siege.endsAt + task.walk;
+      LS.State.addLog(state, `${title}: 버스가 포위돼 있어 기다린다`, false, 'task', '포위가 끝나면 돌아온다');
+      return [];
+    }
     remove(state, task);
     LS.State.addLog(state, `${title}에서 돌아왔다`, false, 'task', energyText(ms));
     return [{ stop: true, toast: `${title}에서 돌아왔다 · ${energyText(ms)}` }];
-  }
-
-  // 침낭 습격 (임시 규칙): 안전하지 않은 동안 시간당 2%. 한 명 HP -15, 모두 정신력 -5, 다들 깬다
-  function campRaid(state, task, ms, dt) {
-    const K = C().camp;
-    const p = 1 - Math.pow(1 - K.raidPerHour, dt / 60);
-    if (!R().chance(p)) return null;
-    const victim = R().pick(ms);
-    R().hurt(state, victim, K.raidHp, C().shock.minorInjury);
-    ms.forEach((m) => { if (m !== victim) R().addMental(m, K.raidMental); });
-    remove(state, task);
-    const text = `자다가 습격받았다! ${josa(R().name(victim.id), '이가')} 다쳤다 (HP ${K.raidHp})`;
-    LS.State.addLog(state, text, true, 'body', `침낭 · 정찰도 경계도 없었다 · 모두 깼다 (정신력 ${K.raidMental}) · 임시 규칙`);
-    return [{ stop: true, toast: `${text} · 모두 깼다.`, important: true }];
   }
 
   function advance(state, task, prev, next) {
@@ -329,9 +450,8 @@ LS.Tasks = (function () {
       ms.forEach((m) => {
         if (d.rest) R().applyRest(state, m, d.rest, dt);
         if (d.drain) R().applyDrain(m, C().energy[d.drain], dt);
-        if (d.isSleep) { if (safe) sleepBonus(state, m, dt); else m.sleepStreak = 0; }
+        if (d.isSleep) { if (safe) sleepBonus(state, m, dt); else m.sleepStreak = 0; }   // 깊은 잠은 안전할 때만
       });
-      if (!safe) { const raid = campRaid(state, task, ms, dt); if (raid) return raid; }
       return next >= task.endAt - 1e-6 ? complete(state, task, 'done') : [];
     }
     task.workDone += dt * speedOf(task.type, ms);
@@ -440,8 +560,22 @@ LS.Tasks = (function () {
     if (task.type === 'scout_area' && done && place) {
       place.scouted = true;
       Object.values(place.spots).forEach((s) => { s.info = 'scouted'; });
-      summary = '건물별 보급 가능성을 확인하고 경보 함정을 설치했다 (이곳에선 침낭으로 자도 안전)';
+      summary = '건물별 보급 가능성을 확인하고 경보 함정을 설치했다 (무리가 2시간 거리에 오면 울린다)';
+      const seen = LS.Zombie.onScouted(state);
+      if (seen) { parts.push(seen); important = true; }
     }
+
+    if (task.type === 'repair') {
+      if (done) {
+        const before = state.bus.durability;
+        state.bus.durability = Math.min(state.bus.maxDurability, before + C().repair.amount);
+        summary = `내구도 ${before} → ${state.bus.durability}`;
+      } else {
+        summary = '정비를 마치지 못했다 (부품은 이미 썼다)';
+      }
+    }
+
+    if (task.type === 'fight') summary = '주변을 정리하고 돌아왔다';
 
     if (task.type === 'scout_route' && done) {
       state.routes[task.routeKey].known = true;
@@ -519,8 +653,12 @@ LS.Tasks = (function () {
     const m = state.minute;
     if (task.type === 'shelter') {
       const left = Math.max(0, task.phaseEnd - m);
-      if (task.phase === 'check' || task.phase === 'walk') return left + task.hours * 60 + task.walk;
+      const sleepMin = task.sleepAfter === false ? 0 : task.hours * 60;
+      if (task.phase === 'walk' && task.clear) return left + C().zombie.fight.minutes + sleepMin + task.walk;
+      if (task.phase === 'check' || task.phase === 'walk') return left + sleepMin + task.walk;
       if (task.phase === 'sleep') return left + task.walk;
+      if (task.phase === 'hold') return 0;
+      if (task.phase === 'clear') return left + sleepMin + task.walk;
       return left;
     }
     if (DEF[task.type].timed) return Math.max(0, task.endAt - m);
@@ -534,7 +672,7 @@ LS.Tasks = (function () {
       return LS.Travel.restKind(state, m.id) === 'bedMoving' ? '침상 휴식 (이동 중)' : '좌석 휴식 (이동 중)';
     }
     const t = m.task ? find(state, m.task) : null;
-    if (t && t.type === 'shelter') return `${spotLabel(state, t)} · ${PHASE[t.phase]} · ${R().hoursLabel(Math.max(0, t.phaseEnd - state.minute))}`;
+    if (t && t.type === 'shelter') return `${spotLabel(state, t)} · ${PHASE[t.phase]}${t.phase === 'hold' ? '' : ' · ' + R().hoursLabel(Math.max(0, t.phaseEnd - state.minute))}`;
     if (t) return `${taskTitle(state, t)} · ${R().hoursLabel(eta(state, t))} 남음`;
     return m.energy < C().energy.seatRest.cap ? '좌석 휴식 (버스 안)' : '대기 (버스 안)';
   }
@@ -552,7 +690,7 @@ LS.Tasks = (function () {
 
   // 지금 이 사람에게 맡길 만한 일이 있는가 ('! 할 일' 표시용. 잠은 일로 치지 않는다)
   function hasWork(state, m) {
-    if (state.travel || m.task || !R().canHeavy(state, m) || !R().canOutside(state, m)) return false;
+    if (state.travel || m.task || !R().canHeavy(state, m) || !R().canOutside(state, m) || LS.Zombie.siegeActive(state)) return false;
     const place = LS.State.place(state);
     if (!place) return false;
     if (state.locationId === 'roadside' && state.roadside && state.roadside.blocked) return true;
@@ -571,6 +709,6 @@ LS.Tasks = (function () {
 
   return {
     DEF, def, validate, preview, start, advance, complete, abort, eta, labelFor, tagFor, find, taskTitle, members,
-    nextMilestone, wouldEmptyBus, isOutside, hasWork, campSafety, beginStep, checkerOf
+    nextMilestone, wouldEmptyBus, isOutside, hasWork, campSafety, beginStep, checkerOf, watchers
   };
 })();
