@@ -28,6 +28,7 @@ LS.UI = (function () {
 
   // 감염 단계는 공개한다 (12장): 이름 옆 꼬리표
   function infectTag(m) {
+    if (m.infectionHidden) return '';   // 숨긴 물림 (배진혁): 발열 전에는 모른다
     const st = R().infectionStage(state, m);
     if (!st) return '';
     const left = LS.CONFIG.infection.turnH * 60 - (state.minute - m.infectedAt);

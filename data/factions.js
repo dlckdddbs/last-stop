@@ -108,3 +108,39 @@ LS.FACTION_RULES = {
   newsFood: 2,          // 보통 평판에서 소식 듣기 대가 [임시] (호의 이상 무료, 19장)
   sickHp: 40            // 이 아래면 대피소에 남아 쉬겠다고 동의한다 [임시]
 };
+
+// ---------- 도심 앞부분 (5단계 4차) ----------
+Object.assign(LS.REFUGES, {
+  dt_clinic: {
+    faction: 'medical', name: '도심 진료소', host: 'go_eunyoung', spot: 'dc_clinic',
+    desc: '의료 네트워크가 지키는 진료소. 다친 사람과 환자를 받고, 약과 물자를 바꿔 준다. 치료는 6단계에서 연결.',
+    lodgeFood: 8,
+    trades: [
+      { id: 'cl_meds_food', give: { meds: 2 }, want: { food: 8 }, text: '진료소 약품 (환자 식량이 모자란다)' },
+      { id: 'cl_meds_parts', give: { meds: 1 }, want: { parts: 2 }, text: '발전기 부품과 바꾼다' }
+    ],
+    donate: { food: 6 },
+    handover: ['sick', 'child', 'elder'],
+    welcome: [
+      { speaker: 'go_eunyoung', text: '의료 네트워크의 고은영입니다. 환자가 있으면 데려오세요. 물린 사람은… 사정을 듣고 정해요.' },
+      { speaker: 'go_eunyoung', text: '약은 넉넉하지 않지만 바꿀 수는 있어요. 해독제는 아직 구하는 중이에요.' }
+    ]
+  },
+  dt_market: {
+    faction: 'merchant', name: '도심 교환 거점', host: 'ma_deoksu', spot: 'dm_base',
+    desc: '주차 빌딩을 통째로 막아 만든 상인 무리의 거점. 연료와 부품이 모인다.',
+    lodgeFood: 6,
+    trades: [
+      { id: 'mk_fuel_food', give: { fuel: 2 }, want: { food: 10 }, text: '드럼통 연료' },
+      { id: 'mk_parts_food', give: { parts: 2 }, want: { food: 8 }, text: '정비용 부품 꾸러미' },
+      { id: 'mk_food_meds', give: { food: 12 }, want: { meds: 2 }, fresh: 0.2, text: '통조림 상자 (약이 비싸게 팔린다)' },
+      { id: 'mk_fuel_parts', give: { fuel: 1 }, want: { parts: 3 }, text: '부품을 받고 연료를 내준다' }
+    ],
+    donate: { food: 6 },
+    handover: [],
+    welcome: [
+      { speaker: 'ma_deoksu', text: '상인 무리의 마덕수요. 여기선 뭐든 바꿀 수 있소. 공짜만 빼고.' },
+      { speaker: 'ma_deoksu', text: '하룻밤 묵고 싶으면 값을 치르쇼. 사람 맡아 주는 일은 안 하오.' }
+    ]
+  }
+});

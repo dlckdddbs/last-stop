@@ -79,6 +79,30 @@ LS.REQUESTS = {
   }
 };
 
+// ---------- 도심 앞부분 (5단계 4차) ----------
+Object.assign(LS.REQUESTS, {
+  // 17장 이수아: 환자 1명 의료대피소 이송 · 좌석 1 · 3일. 환자는 부탁을 맡으면 주거 약국 거리에 나타난다
+  sua_patient: {
+    from: 'lee_sua', kind: 'normal', offer: 'join', title: '환자를 도심 진료소로', days: 3,
+    target: ['res_pharm'], deliver: 'dt_clinic',
+    reward: { rep: 3 },
+    rewardText: '의료 네트워크 평판 +3 (의료 연줄)',
+    ask: [
+      { speaker: 'lee_sua', text: '주거 약국 거리 의원 대기실에 두고 온 환자가 있어요. 다리를 다쳐서 혼자는 못 움직여요.' },
+      { speaker: 'lee_sua', text: '도심 진료소까지만 데려다주세요. 좌석 하나면 돼요. 사흘 안에요.' }
+    ]
+  },
+  // 17장 유상철: 공항 지역 진입 전 교환 거점 방문 (공항 지역은 7단계)
+  yoo_visit: {
+    from: 'yoo_sangcheol', kind: 'normal', offer: 'join', title: '공항 앞 교환 거점 방문', days: null,
+    where: '공항 지역에 들어가기 전 교환 거점에 들른다 (7단계)',
+    airport: true,
+    reward: { rep: 3 },
+    rewardText: '공항 지역에 들어가기 전 교환 거점에 들르면 완료 · 상인 무리 평판 +3 (공항 지역은 7단계)',
+    ask: [{ speaker: 'yoo_sangcheol', text: '공항 들어가기 전에 교환 거점에 꼭 한 번 들러야 하오. 넘길 물건이 있어서.' }]
+  }
+});
+
 LS.REQUEST_RULES = {
   maxNormal: 3,           // 일반 부탁 동시 3개 (20장)
   maxUrgent: 1,           // 급한 용무 동시 1개
@@ -98,7 +122,7 @@ LS.REQUEST_RULES = {
 
 // 작은 순간 (21장): 같은 장면 한 판 1회, 하루 최대 1개
 LS.MOMENTS = {
-  han_check: { who: 'han_jungsu', kept: true, title: '한정수의 새벽 점검', effect: '내구도 +5',
+  han_check: { who: 'han_jungsu', kept: true, hours: [4, 9], title: '한정수의 새벽 점검', effect: '내구도 +5',
     lines: [{ speaker: 'narration', text: '새벽, 엔진룸 쪽에서 덜그럭 소리가 난다.' }, { speaker: 'han_jungsu', text: '약속 지켜 줘서 고맙소. 그래서 나도 내 몫은 하려고. 벨트 좀 조여 놨소.' }] },
   narae_alley: { who: 'kim_narae', kept: true, title: '김나래의 뒷길 안내', effect: '지금 있는 곳에서 나가는 길을 모두 확인 (경로 정찰 생략)',
     lines: [{ speaker: 'kim_narae', text: '밥 꼬박꼬박 챙겨 줘서 기운이 나네요. 여기서 나가는 길, 제가 다 알아요. 정찰 안 해도 돼요.' }] },
@@ -108,6 +132,8 @@ LS.MOMENTS = {
     lines: [{ speaker: 'park_seoyun', text: '기억나요? 소방서 옥상에서 컵라면 먹던 거. 그때는 출동 벨이 제일 무서웠는데.' }, { speaker: 'yoon_jaeha', text: '…그래. 그땐 다 구할 수 있을 줄 알았지.' }] },
   radio_song: { title: '주파수 사이의 노래', effect: '전원 정신력 +1',
     lines: [{ speaker: 'narration', text: '라디오 주파수를 돌리다 잡음 사이로 오래된 노래가 흘러나온다. 아무도 끄자고 하지 않는다.' }] },
+  yoo_gift: { who: 'yoo_sangcheol', kept: true, title: '유상철의 교환품 선물', effect: '부품 +1',
+    lines: [{ speaker: 'yoo_sangcheol', text: '짐 칸 내준 값이오. 이건 장부에 안 적겠소.' }, { speaker: 'narration', text: '유상철이 상자에서 부품 하나를 꺼내 건넨다.' }] },
   first_request: { title: '첫 부탁 성공', effect: '참여자 정신력 +2',
     lines: [{ speaker: 'park_seoyun', text: '우리가 누군가를 도왔네요. …이런 날도 있어야죠.' }] }
 };

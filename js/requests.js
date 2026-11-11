@@ -30,6 +30,7 @@ LS.Requests = (function () {
   function whereText(r) {
     const t = tpl(r.tid) || {};
     if (r.kind === 'promise') return `${locName(r.at)}로 돌아가 데려온다`;
+    if (t.where) return t.where;
     if (t.deliver) return `${locName(t.deliver)}까지 태워 간다`;
     if (t.airport) return '공항 접수대에 전한다';
     const targets = r.target || t.target || [];
@@ -342,7 +343,7 @@ LS.Requests = (function () {
       key: 'rescue@' + loc, target: [tgt], faction: rf.faction, who: 'rescued_' + loc,
       lines: [
         { speaker: 'radio', text: `${rf.name} 무전입니다. ${locName(tgt)}에 주민 한 명이 고립돼 있어요. 무리가 그쪽으로 가고 있습니다.` },
-        { speaker: rf.host, text: `${t.hours}시간 안에 꺼내지 못하면 늦어요. 우리는 차가 없어요. 부탁할게요.` }
+        { speaker: rf.host, text: `${t.hours}시간 안에 꺼내지 못하면 늦어요. 우리 쪽은 손이 모자라요. 부탁할게요.` }
       ],
       extraObs: [`지금 경로: 여기서 ${locName(tgt)}까지 약 ${hrs}시간 운전 + 구조 1시간 · 여유 약 ${Math.max(0, Math.round(spare))}시간`]
     });
@@ -410,12 +411,14 @@ LS.Requests = (function () {
     });
     if (M.lastDay === day) return;
     let pick = null;
+    const h = LS.Clock.hour(state.minute);
     // 기다리는 장면 (5일 준수·첫 부탁 성공): 장면의 주인공이 아직 버스에 있어야 한다
-    while (M.pending.length && !pick) {
-      const p = M.pending.shift();
+    for (let i = 0; i < M.pending.length && !pick; i++) {
+      const p = M.pending[i];
       const def = LS.MOMENTS[p.id];
-      if (M.done[p.id]) continue;
-      if (def.who && !R().member(state, def.who)) continue;
+      if (M.done[p.id] || (def.who && !R().member(state, def.who))) { M.pending.splice(i--, 1); continue; }
+      if (def.hours && !(h >= def.hours[0] && h < def.hours[1])) continue;   // 정해진 시간대에만 (새벽 점검)
+      M.pending.splice(i, 1);
       pick = p;
     }
     if (!pick && !M.done.firehouse && safeNight(state)) {
@@ -423,7 +426,6 @@ LS.Requests = (function () {
       const p = R().member(state, 'park_seoyun');
       if (y && p && [y, p].every((m) => m.mental >= 50 && m.mental <= 70)) pick = { id: 'firehouse' };
     }
-    const h = LS.Clock.hour(state.minute);
     if (!pick && !M.done.radio_song && h >= 18 && h < 22 && LS.Clock.day(state.minute) >= 4 && noDeathsSince(state, state.minute - 3 * DAY)) pick = { id: 'radio_song' };
     if (!pick) return;
     M.done[pick.id] = true;
@@ -436,6 +438,7 @@ LS.Requests = (function () {
 
   function applyMoment(state, p) {
     const def = LS.MOMENTS[p.id];
+    if (p.id === 'yoo_gift') { state.resources.parts += 1; return '부품 +1'; }
     if (p.id === 'han_check') { const b = state.bus; b.durability = Math.min(b.maxDurability, b.durability + 5); return `내구도 +5 (${b.durability})`; }
     if (p.id === 'narae_alley') {
       let n = 0;

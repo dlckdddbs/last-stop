@@ -34,6 +34,11 @@ LS.ASSETS = {
     song_jiho: 'images/portraits/song_jiho.svg',
     lim_hyejin: 'images/portraits/lim_hyejin.svg',
     kwon_sunja: 'images/portraits/kwon_sunja.svg',
+    bae_jinhyuk: 'images/portraits/bae_jinhyuk.svg',
+    yoo_sangcheol: 'images/portraits/yoo_sangcheol.svg',
+    nam_gyuhyun: 'images/portraits/nam_gyuhyun.svg',
+    go_eunyoung: 'images/portraits/go_eunyoung.svg',
+    ma_deoksu: 'images/portraits/ma_deoksu.svg',
     radio: 'images/portraits/radio.svg'
   },
   icons: {

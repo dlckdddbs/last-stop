@@ -137,10 +137,39 @@ LS.CHARACTERS.kwon_sunja = {
   traits: ['다리가 불편해 일을 맡지 않는다', '자급 마을까지만 간다 (이송 부탁 2일)']
 };
 
+// ---------- 도심 앞부분 (5단계 4차, 16장) ----------
+Object.assign(LS.CHARACTERS, {
+  bae_jinhyuk: {
+    name: '배진혁',
+    role: '일반 성인 · 무소속 · 도심 정류장',
+    canDrive: true,                // [임시] 기획서에 운전 여부가 없음
+    hiddenBite: true,              // 팔을 숨김·미열. 합류 24시간 뒤 발열 (17장)
+    traits: ['먼저 태워 달라고 청했다', '팔을 잘 보여 주지 않는다', '운전 가능 (임시)']
+  },
+  yoo_sangcheol: {
+    name: '유상철',
+    role: '상인 · 상인 무리 · 도심 교환 거점',
+    canDrive: true,                // [임시]
+    traits: ['교환품을 싣고 다닌다 (식량 보관 -10)', '합류 조건: 교환품이 식량 보관 10칸을 쓴다', '운전 가능 (임시)'],
+    joinCondition: '교환품이 식량 보관 10칸을 쓴다',
+    condition: 'tradeGoods',
+    foodCapUse: 10
+  },
+  // 임시 인물 (Claude 추가): 이수아의 부탁 '환자 1명 의료대피소 이송'의 환자. 기획서에 이름이 없음
+  nam_gyuhyun: {
+    name: '남규현',
+    role: '다친 주민 · 임시 동행 (임시 인물)',
+    canDrive: false,
+    traits: ['다리를 다쳐 걷기 힘들다', '도심 진료소까지만 간다']
+  },
+  go_eunyoung: { name: '고은영', role: '의료 네트워크 대표 · 도심 진료소', host: true, canDrive: false, traits: ['합류하지 않는다'] },
+  ma_deoksu: { name: '마덕수', role: '상인 무리 대표 · 도심 교환 거점', host: true, canDrive: false, traits: ['합류하지 않는다'] }
+});
+
 // 소속 집단 (16장 직책·소속). 없으면 무소속
 const FACTION_OF = {
-  lee_sua: 'medical', seo_dongjin: 'medical',
-  oh_taeseok: 'merchant', kim_narae: 'merchant',
+  lee_sua: 'medical', seo_dongjin: 'medical', go_eunyoung: 'medical',
+  oh_taeseok: 'merchant', kim_narae: 'merchant', yoo_sangcheol: 'merchant', ma_deoksu: 'merchant',
   jung_minkyung: 'residents', jung_hayul: 'residents', song_jiho: 'residents', lim_hyejin: 'residents', kwon_sunja: 'residents'
 };
 Object.keys(FACTION_OF).forEach((id) => { LS.CHARACTERS[id].faction = FACTION_OF[id]; });

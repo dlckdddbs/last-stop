@@ -33,7 +33,10 @@ LS.State = (function () {
     m.joinedAt = state.minute;         // 합류 시각 (합류 조건 5일 준수·부탁 제안에 쓴다)
     m.keptSince = state.minute;        // 합류 조건을 지키기 시작한 시각 (위반하면 다시 센다)
     state.crew.push(m);
-    addLog(state, `${LS.CHARACTERS[id].name} 합류`, true, 'event', roleLabel || LS.CHARACTERS[id].role);
+    // 유상철: 교환품이 식량 보관 칸을 쓴다 (17장 합류 조건)
+    const cap = LS.CHARACTERS[id].foodCapUse || 0;
+    if (cap) state.resources.foodCap -= cap;
+    addLog(state, `${LS.CHARACTERS[id].name} 합류`, true, 'event', (roleLabel || LS.CHARACTERS[id].role) + (cap ? ` · 식량 보관 한도 -${cap}` : ''));
     return true;
   }
 
@@ -133,6 +136,7 @@ LS.State = (function () {
     state.tasks.forEach((t) => { t.members = t.members.filter((x) => x !== id); });
     state.tasks = state.tasks.filter((t) => t.members.length);
     state.crew.splice(idx, 1);
+    if (LS.CHARACTERS[id].foodCapUse) state.resources.foodCap += LS.CHARACTERS[id].foodCapUse;   // 교환품 칸 반환
     state.dead.push({ id, minute: state.minute, how });
     const nm = LS.CHARACTERS[id].name;
     if (how === 'dead') addLog(state, `${LS.Rules.josa(nm, '이가')} 숨졌다.`, true, 'body');

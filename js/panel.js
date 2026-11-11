@@ -184,7 +184,7 @@ LS.Panel = (function () {
     const c = LS.CHARACTERS[id];
     const stage = R().mentalStage(m.mental);
     const cls = stage === '안정' ? '' : stage === '동요' ? 'shaken' : 'broken';
-    const inf = R().infectionStage(state, m);
+    const inf = m.infectionHidden ? null : R().infectionStage(state, m);   // 숨긴 물림은 발열 전까지 안 보인다
     const status = inf ? `감염 · ${inf} (전환까지 ${hoursLabel(Math.max(0, LS.CONFIG.infection.turnH * 60 - (state.minute - m.infectedAt)))})${m.isolated ? ' · 격리 좌석' : ''}`
       : R().isPoisoned(state, m) ? `식중독 (${hoursLabel(m.poisonUntil - state.minute)} 남음)` : m.status;
     return `<div class="det-head"><img src="${LS.ASSETS.portraits[id]}" alt=""><div><div class="det-name">${esc(c.name)}</div><div class="det-role">${esc(c.role)}</div></div></div>` +

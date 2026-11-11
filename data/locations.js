@@ -130,9 +130,56 @@ LS.LOCATIONS = {
       { id: 'rb_truck', label: '다리 위 버려진 트럭', type: 'roadside_car', x: 30, y: 56 }
     ]
   },
-  // 다음 지역 입구 (이후 단계에서 열린다)
+  // ---------- 도심 앞부분 (5단계 4차). 도심은 무리가 크다 (35%, 중·대규모) ----------
   downtown_gate: {
     name: '도심 입구', region: 'downtown', bg: 'street', map: { x: 160, y: 330 }, alt: { residential: { x: 1500, y: 300 } },
+    spots: [
+      { id: 'dg_check', label: '버려진 검문소 차량', type: 'roadside_car', x: 18, y: 62 },
+      { id: 'dg_shop', label: '입구 상가 편의점', type: 'convenience', x: 34, y: 40 },
+      { id: 'dg_shelter', label: '상가 2층 사무실', type: 'shelter', x: 54, y: 26 }
+    ]
+  },
+  dt_stop: {
+    name: '도심 정류장', region: 'downtown', bg: 'street', map: { x: 470, y: 210 },
+    spots: [
+      { id: 'ds_kiosk', label: '정류장 매점', type: 'convenience', x: 26, y: 44 },
+      { id: 'ds_bus', label: '멈춘 시내버스', type: 'roadside_car', x: 14, y: 64 },
+      { id: 'ds_shelter', label: '지하상가 관리실', type: 'shelter', x: 50, y: 28 }
+    ]
+  },
+  dt_clinic: {
+    name: '도심 진료소', region: 'downtown', bg: 'street', map: { x: 440, y: 640 },
+    spots: [
+      { id: 'dc_clinic', label: '진료소 (의료 거점)', type: 'refuge', x: 44, y: 28 },
+      { id: 'dc_pharm', label: '진료소 앞 약국', type: 'pharmacy', x: 22, y: 44 }
+    ]
+  },
+  dt_market: {
+    name: '도심 교환 거점', region: 'downtown', bg: 'street', map: { x: 800, y: 430 },
+    spots: [
+      { id: 'dm_base', label: '주차 빌딩 교환 거점', type: 'refuge', x: 40, y: 28 },
+      { id: 'dm_house', label: '뒷골목 주택', type: 'house', x: 18, y: 46 }
+    ]
+  },
+  dt_mall: {
+    name: '도심 백화점', region: 'downtown', bg: 'street', map: { x: 1120, y: 250 },
+    spots: [
+      { id: 'dl_mart', label: '지하 식품관', type: 'mart', x: 24, y: 42 },
+      { id: 'dl_parking', label: '주차장 차량', type: 'roadside_car', x: 14, y: 64 },
+      { id: 'dl_shelter', label: '옥상 직원 휴게실', type: 'shelter', x: 50, y: 22 }
+    ]
+  },
+  dt_tower: {
+    name: '도심 방송탑 사거리', region: 'downtown', bg: 'street', map: { x: 1150, y: 680 },
+    spots: [
+      { id: 'dw_gas', label: '사거리 주유소', type: 'gas_station', x: 24, y: 44 },
+      { id: 'dw_house', label: '방송탑 관리동', type: 'house', x: 46, y: 36 },
+      { id: 'dw_shelter', label: '관리동 숙직실', type: 'shelter', x: 56, y: 22 }
+    ]
+  },
+  // 다음 지역 입구 (이후 단계에서 열린다)
+  airport_road: {
+    name: '공항 고속도로 입구', region: 'airport', bg: 'street', map: { x: 160, y: 450 }, alt: { downtown: { x: 1500, y: 460 } },
     exit: true,
     spots: []
   },
@@ -171,5 +218,16 @@ LS.ROUTES = [
   { a: 'res_village', b: 'military_gate', hours: 5, road: '큰길' },
   { a: 'res_bridge', b: 'downtown_gate', hours: 3, road: '다리', closesDay: 10 },   // D7 예고, D10부터 폐쇄 (05장)
   // 숨은 길: 다리가 닫히면 드러나는 우회로 (05장 예시 '하천 관리도로', 6~10시간 우회)
-  { a: 'res_village', b: 'downtown_gate', hours: 9, road: '하천 관리도로', hidden: true }
+  { a: 'res_village', b: 'downtown_gate', hours: 9, road: '하천 관리도로', hidden: true },
+  // 도심 앞부분 (5단계 4차, 시간은 임시값: 도심 입구 → 공항 고속도로 입구 최단 약 13시간)
+  { a: 'downtown_gate', b: 'dt_stop', hours: 3, road: '큰길' },
+  { a: 'downtown_gate', b: 'dt_clinic', hours: 4, road: '큰길' },
+  { a: 'dt_stop', b: 'dt_market', hours: 3, road: '큰길' },
+  { a: 'dt_clinic', b: 'dt_market', hours: 3, road: '큰길' },
+  { a: 'dt_stop', b: 'dt_mall', hours: 4, road: '큰길' },
+  { a: 'dt_market', b: 'dt_mall', hours: 3, road: '큰길' },
+  { a: 'dt_market', b: 'dt_tower', hours: 4, road: '큰길' },
+  { a: 'dt_clinic', b: 'dt_tower', hours: 5, road: '큰길' },
+  { a: 'dt_mall', b: 'airport_road', hours: 4, road: '큰길' },
+  { a: 'dt_tower', b: 'airport_road', hours: 4, road: '큰길' }
 ];

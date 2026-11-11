@@ -151,6 +151,64 @@ LS.ENCOUNTERS.kwon_sunja = {
   farewell: [{ speaker: 'kwon_sunja', text: '여기야, 여기. 아이고, 살았다.' }]
 };
 
+// ---------- 도심 앞부분 (5단계 4차, 16~17장) ----------
+Object.assign(LS.ENCOUNTERS, {
+  // 배진혁 · 도심 정류장 · 물림을 숨기고 먼저 요청 (속이는 인물). 합류 24시간 뒤 발열
+  bae_jinhyuk: {
+    who: ['bae_jinhyuk'], kind: 'join', where: 'dt_stop', pos: { x: 36, y: 68 },
+    title: '먼저 다가온 남자',
+    purpose: '공항까지 같이 가고 싶어 한다. 버스를 보자마자 달려왔다',
+    condition: '없음',
+    intro: [
+      { speaker: 'narration', text: '정류장 유리 벽 뒤에서 남자가 뛰어나온다. 왼팔을 몸에 붙인 채다.' },
+      { speaker: 'bae_jinhyuk', text: '공항 가시죠? 저도 태워 주세요. 뭐든 할게요. 운전도 할 줄 알아요. 제발요.' }
+    ],
+    observed: ['왼팔 소매를 손으로 꽉 쥐고 있다', '얼굴이 조금 붉고 땀이 난다', '먼저 태워 달라고 서두른다'],
+    opinion: { speaker: 'park_seoyun', text: '너무 서두르는 것 같아요… 확인은 해 보는 게 어때요?' },
+    interview: ['어디서 왔냐는 물음에 정류장, 지하상가, 친구 집으로 말이 바뀐다', '팔 이야기가 나오면 말을 돌린다'],
+    inspect: {
+      results: ['짐: 휴대폰, 지갑, 물 한 병', '이마가 뜨겁다. 미열이 있다'],
+      wound: { hero: '소매를 걷게 하니 왼팔에 이빨 자국이 있다. 물린 지 하루가 안 됐다 (윤재하는 물린 자국을 알아본다)', other: '팔을 끝내 보여 주지 않는다. "넘어져서 까졌어요."' },
+      grumble: '"그냥 좀 태워 주면 안 돼요?" 목소리가 떨린다'
+    },
+    acceptLine: '고마워요. 정말… 고마워요.'
+  },
+  // 유상철 · 상인 · 도심 교환 거점 · 교환품이 식량 보관 10칸을 쓴다
+  yoo_sangcheol: {
+    who: ['yoo_sangcheol'], kind: 'join', where: 'dt_market', pos: { x: 62, y: 66 },
+    title: '짐 많은 상인',
+    purpose: '공항까지 같이 가고 싶어 한다. 교환품을 싣고 가야 한다',
+    condition: '교환품이 식량 보관 10칸을 쓴다 (식량 보관 한도 -10)',
+    intro: [
+      { speaker: 'narration', text: '교환 거점 입구에서 상자를 잔뜩 쌓은 손수레를 끄는 남자가 손을 든다.' },
+      { speaker: 'yoo_sangcheol', text: '유상철이오. 공항까지 갑시다. 짐이 좀 많지만, 이게 다 길에서 돈이 되는 물건이오.' }
+    ],
+    observed: ['교환품 상자 여럿 (식량 보관 10칸 차지)', '상인 무리 완장', '합류를 원한다'],
+    opinion: { speaker: 'park_seoyun', text: '식량 칸을 열 칸이나 쓰면… 그래도 상인 쪽 연줄은 생기겠네요.' },
+    interview: ['상인 무리 소속. 공항 앞 교환 거점에 들러 물건을 넘겨야 한다고 한다 (부탁)', '말에 앞뒤가 맞는다. 계산이 빠르다'],
+    inspect: { results: ['상자: 배터리, 공구, 담배, 통조림 약간', '상처나 물린 자국은 없다'], grumble: '"물건 흐트러뜨리지 마쇼."' },
+    acceptLine: '좋소. 손해 볼 일은 없을 거요.'
+  },
+  // 이수아의 부탁에 나오는 환자 (임시 인물): 부탁을 맡았을 때만 주거 약국 거리 의원 대기실에 있다
+  sua_patient: {
+    who: ['nam_gyuhyun'], kind: 'temp', dest: 'dt_clinic', destText: '도심 진료소', where: 'res_pharm', pos: { x: 56, y: 64 },
+    needsRequest: 'sua_patient', fulfills: 'sua_patient',
+    title: '의원 대기실의 환자',
+    purpose: '도심 진료소까지 데려다 달라고 한다 (이수아의 부탁)',
+    condition: '없음 · 도심 진료소에서 내린다',
+    intro: [
+      { speaker: 'narration', text: '의원 대기실 의자에 다리를 붕대로 감은 남자가 누워 있다.' },
+      { speaker: 'nam_gyuhyun', text: '이수아 간호사님이 보내셨어요? …진료소까지만 부탁드려요.' }
+    ],
+    observed: ['다리를 다쳐 걷기 힘들다', '붕대는 깨끗하다. 물린 상처는 아니라고 한다', '도심 진료소까지 (좌석 1개)'],
+    opinion: { speaker: 'lee_sua', text: '제가 두고 온 환자예요. 진료소까지만 데려다주면 돼요.' },
+    interview: ['공사장에서 다리를 다쳤다고 한다. 이수아와 이야기가 맞는다'],
+    inspect: { results: ['다리의 골절 부목', '물린 자국은 없다'] },
+    acceptLine: '감사합니다…',
+    farewell: [{ speaker: 'go_eunyoung', text: '이수아 간호사가 말한 환자군요. 여기서 맡을게요.' }]
+  }
+});
+
 LS.PEOPLE_RULES = {
   supportFood: 2,          // 물자만 나눠 줄 때 식량 (임시값)
   meetHours: [8, 19],      // 2~3일째 도로변 두 사람이 다가오는 시간대 (임시값)

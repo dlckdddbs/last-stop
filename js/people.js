@@ -136,6 +136,7 @@ LS.People = (function () {
       if (!LS.State.addMember(state, cid, temp ? `임시 동행 · ${temp.destText}까지` : LS.CHARACTERS[cid].role)) return;
       const m = R().member(state, cid);
       if (temp) m.temp = { enc: id, dest: temp.dest, from: state.locationId, thief: e.kind === 'thief', rep: alt ? { faction: e.altTemp.faction, amount: e.altTemp.rep } : null };
+      if (LS.CHARACTERS[cid].hiddenBite) { m.infectedAt = state.minute; m.infectionHidden = true; }   // 숨긴 물림: 24시간 뒤 발열 (17장)
     });
     r.status = temp ? 'riding' : 'joined';
     if (e.request && !alt) LS.Requests.accept(state, e.request, {});   // 이송 부탁 (권순자)
@@ -214,6 +215,7 @@ LS.People = (function () {
     Object.keys(LS.ENCOUNTERS).forEach((id) => {
       const e = enc(id);
       if (e.where !== loc || rec(state, id).status !== 'unmet') return;
+      if (e.needsRequest && !LS.Requests.active(state).some((r) => r.tid === e.needsRequest)) return;   // 부탁을 맡았을 때만 나온다
       meet(state, id, out);
     });
   }
@@ -246,7 +248,8 @@ LS.People = (function () {
           LS.State.addLog(s, `${josa(whoNames(e), '이가')} 내렸다`, false, 'event', `임시 동행 · ${LS.State.location(s).name}`);
           if (!thieves) ids.forEach((x) => LS.Factions.addRecord(s, 'helped', x, 'delivered'));
           if (rp) LS.Factions.changeRep(s, rp.faction, rp.amount, `${josa(whoNames(e), '을를')} ${LS.State.location(s).name}까지 데려다줬다`);
-          if (e.request) LS.Time.handle(LS.Requests.onDelivered(s, e.request));   // 이송 부탁 완료
+          const tid = e.fulfills || e.request;   // 이송 부탁 완료 (권순자·이수아의 환자)
+          if (tid) LS.Time.handle(LS.Requests.onDelivered(s, tid));
         }
       }]
     };
@@ -319,8 +322,32 @@ LS.People = (function () {
   function advance(state, prev, next) {
     const out = [];
     meetBrothers(state, out);
+    revealBites(state, out);
     thiefCheck(state, out);
     return out;
+  }
+
+  // 숨긴 물림 (배진혁, 17장): 합류 24시간 뒤 발열하면 더는 숨길 수 없다
+  function revealBites(state, out) {
+    state.crew.forEach((m) => {
+      if (!m.infectionHidden || R().infectionHours(state, m) < LS.CONFIG.infection.feverH) return;
+      m.infectionHidden = false;
+      const sua = R().member(state, 'lee_sua');
+      LS.State.addLog(state, `${nm(m.id)}: 숨긴 물림이 드러났다`, true, 'body', '감염 발열 단계 · 외부 작업 불가 · 66시간에 결정');
+      out.push({ dialog: {
+        title: `${nm(m.id)}의 열`, screen: state.travel ? 'travel' : 'bus',
+        lines: [
+          { speaker: 'narration', text: `${josa(nm(m.id), '이가')} 좌석에서 덜덜 떤다. 이마가 불덩이다. 소매 밑으로 붉게 부은 자국이 보인다.` },
+          { speaker: m.id, text: '…말하면 안 태워 줄 것 같았어요. 정류장에서 물렸어요. 미안해요.' }
+        ].concat(sua ? [{ speaker: 'lee_sua', text: '물렸다고 길에 버리면 안 돼요. 끝까지 같이 가요.' }] : []),
+        observations: [
+          '감염 확정 · 지금 발열 단계: 외부 작업 불가, 기력 회복 절반',
+          `48시간부터 악화, 66시간에 결정 (해독제·억제제·대피소 인계는 6단계)`,
+          sua ? '이수아의 합류 조건: 감염자를 버리지 않는다' : '하차시키면 위험한 강제 하차가 된다'
+        ],
+        choices: [{ label: '…알았다' }]
+      } });
+    });
   }
 
   // 22장 ①: 2~3일째 낮, 버스가 서 있으면 도로변의 두 사람이 다가온다
