@@ -48,7 +48,11 @@ LS.SPOT_TYPES = {
   // 잠자리 건물 (2026-11-10): 파밍 건물과 따로, 장소마다 있을 수도 없을 수도 있다. 버스에서 걸어서 15~20분
   shelter: {
     name: '잠자리 건물', canRest: true
-  }
+  },
+  // 5단계 2차: 다른 집단이 관리하는 대피소 (숙박·교환·인계·소식, data/factions.js REFUGES)
+  refuge: { name: '대피소' },
+  // 통행료 바리케이드 (23장 ⑥)
+  barricade: { name: '통행료 바리케이드' }
 };
 
 LS.LOOT_NAMES = {

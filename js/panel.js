@@ -76,6 +76,7 @@ LS.Panel = (function () {
       const sick = ok.filter((m) => R().isPoisoned(state, m) || m.hp < 70).sort((a, b) => a.hp - b.hp);
       return (sick.length ? sick : ok.filter(tired).sort((a, b) => a.energy - b.energy)).slice(0, max).map((m) => m.id);
     }
+    if (type === 'lodge') return ok.map((m) => m.id);   // 대피소 숙박: 기본은 모두
     if (type === 'watch') return ok.slice().sort((a, b) => b.energy - a.energy).slice(0, 2).map((m) => m.id);
     if (key && key.indexOf('clear:') === 0) return ok.slice().sort((a, b) => b.energy - a.energy).map((m) => m.id);   // 처리는 갈 수 있는 사람 모두
 
@@ -159,7 +160,7 @@ LS.Panel = (function () {
       (info.length ? `<div class="act-info">${info.join(' · ')}</div>` : '') + warn +
       (p.reason ? `<div class="act-reason">${esc(p.reason)}</div>` : '') +
       `<button class="act-go" data-act="start" data-key="${esc(key)}" data-type="${type}"` +
-      `${opts.spotId ? ` data-spot="${opts.spotId}"` : ''}${opts.routeKey ? ` data-route="${opts.routeKey}"` : ''}${opts.clear ? ' data-clear="1"' : ''}${opts.person ? ` data-person="${opts.person}"` : ''} ${p.reason ? 'disabled' : ''}>시작</button></div>`;
+      `${opts.spotId ? ` data-spot="${opts.spotId}"` : ''}${opts.routeKey ? ` data-route="${opts.routeKey}"` : ''}${opts.clear ? ' data-clear="1"' : ''}${opts.person ? ` data-person="${opts.person}"` : ''}${opts.purpose ? ` data-purpose="${opts.purpose}"` : ''} ${p.reason ? 'disabled' : ''}>시작</button></div>`;
   }
 
   function runningTasks(filter) {
@@ -193,8 +194,119 @@ LS.Panel = (function () {
       `<div class="stat"><div class="stat-row"><span>상태</span><span class="v">${esc(status)}</span></div></div>` +
       `<div class="stat"><div class="stat-row"><span>현재 행동</span><span class="v">${esc(LS.Tasks.labelFor(state, m))}</span></div></div>` +
       `<div class="stat"><div class="stat-row"><span>운전</span><span class="v">${R().canDrive(state, m) ? '가능' : (c.canDrive ? '지금은 불가 (' + R().driveBlockReason(state, m) + ')' : '불가')}</span></div></div>` +
+      (c.faction ? `<div class="stat"><div class="stat-row"><span>소속</span><span class="v">${esc(LS.FACTIONS[c.faction].name)}</span></div></div>` : '') +
       (m.task ? `<button class="mini" data-act="abort" data-task="${m.task}">이 작업 중단</button>` : '') +
-      `<ul class="det-traits">${c.traits.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
+      `<ul class="det-traits">${c.traits.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` +
+      (id !== 'yoon_jaeha' && !state.travel && !state.dialogOpen
+        ? `<button class="mini drop-btn" data-act="drop" data-id="${id}">내리게 하기</button><div class="pn-info dim">${esc(LS.Factions.dropText(LS.Factions.dropKind(state, id).kind))}</div>` : '');
+  }
+
+  // ---------- 대피소 (04장·19장): 숙박·교환·작은 도움·소식·사람 맡기기 ----------
+  function buildRefuge(meta) {
+    const F = LS.Factions;
+    const id = state.locationId;
+    const rf = F.refugeAt(id);
+    if (!rf) return null;
+    const e = F.entry(state, id);
+    const f = LS.FACTIONS[rf.faction];
+    let html = `<div class="pn-title">${esc(rf.name)}</div><div class="pn-sub">${esc(f.name)} · 대표 ${esc(f.leader)} · ${esc(meta.label)}</div>`;
+    html += `<div class="pn-safety ${e.open ? 'ok' : 'bad'}">평판 ${F.signed(F.rep(state, rf.faction))} · ${e.stance.label}${e.why ? ' — ' + esc(e.why) : ''}</div>`;
+    html += `<div class="pn-info">${esc(rf.desc)}</div>`;
+    if (!e.open) return html + '<div class="pn-info dim">부탁을 들어주거나 사과(부품 2개 또는 식량 10인분)로 평판을 되돌릴 수 있어요 (다음 업데이트).</div>';
+    html += runningTasks((t) => t.locId === id && (t.type === 'lodge' || t.type === 'helpout'));
+    // 숙박
+    const lc = F.lodgeCost(state, id);
+    if (e.lodge) {
+      html += actionBlock('lodge', 'lodge', '대피소에서 묵기', { after: 0, help: `${LS.Tasks.DEF.lodge.help} 대가: ${lc.food > 0 ? `식량 ${lc.food}인분` : lc.note}` });
+    } else html += `<div class="act"><div class="act-head"><b>대피소에서 묵기</b></div><div class="act-reason">${esc(e.why)}</div></div>`;
+    // 교환
+    html += '<div class="act"><div class="act-head"><b>교환</b><span>평판 1점당 5% 할인/할증</span></div>' + rf.trades.map((tr) => {
+      const cost = F.tradeCost(state, id, tr);
+      const ok = F.canPay(state, cost);
+      return `<div class="trade-row"><span>${esc(F.costText(cost))} → <b>${esc(F.costText(tr.give))}</b><small>${esc(tr.text)}</small></span>` +
+        `<button class="mini" data-act="trade" data-id="${tr.id}" ${ok ? '' : 'disabled'}>${ok ? '바꾸기' : '모자람'}</button></div>`;
+    }).join('') + '</div>';
+    // 작은 도움 (참조 A: 평판 +1)
+    const hb = F.helpBlock(state, id);
+    html += `<div class="act"><div class="act-head"><b>작은 도움</b><span>평판 +1 · 하루 한 번</span></div>` +
+      `<div class="trade-row"><span>${esc(F.costText(rf.donate))}을 나눈다</span><button class="mini" data-act="donate" ${hb || !F.canPay(state, rf.donate) ? 'disabled' : ''}>나누기</button></div>` +
+      (hb ? `<div class="act-reason">${esc(hb)}</div>` : '') + '</div>';
+    if (!hb) html += actionBlock('help:' + id, 'helpout', '일손 돕기 (2시간)', { purpose: 'refuge' });
+    // 소식
+    const nc = F.newsCost(state, id);
+    const heard = F.rstate(state, id).newsDay === LS.Clock.rolloverIndex(state.minute);
+    html += `<div class="act"><div class="act-head"><b>무전 소식 듣기</b><span>${nc ? `식량 ${nc}인분` : '호의 이상: 무료'}</span></div>` +
+      '<div class="act-help">이 지역의 길 상태(도로 사건 40% → 20%)와 다가오는 무리를 알려 줘요. 하루 한 번.</div>' +
+      `<button class="act-go" data-act="news" ${heard ? 'disabled' : ''}>${heard ? '오늘은 들었다' : '듣기'}</button></div>`;
+    // 사람 맡기기 (안전 인계)
+    html += '<div class="act"><div class="act-head"><b>사람 맡기기</b><span>본인이 원하면 안전한 인계</span></div>';
+    if (!e.handover) html += `<div class="act-reason">${esc(e.why)}</div>`;
+    else {
+      const seen = new Set();
+      const units = [];
+      state.crew.forEach((m) => {
+        if (m.id === 'yoon_jaeha' || seen.has(m.id)) return;
+        const u = F.unitOf(state, m.id);
+        u.forEach((x) => seen.add(x.id));
+        units.push(u);
+      });
+      html += '<div class="act-help">아이·가족·노인·다친 사람(HP 40 미만)은 여기 남기를 원해요. 원하지 않는 사람을 남기면 신뢰를 잃어요.</div>';
+      html += units.map((u) => {
+        const ok = F.consents(state, id, u);
+        return `<div class="trade-row"><span>${esc(u.map((m) => R().name(m.id)).join('·'))}<small>${ok ? '남기를 원한다' : '공항까지 가고 싶어 한다'}</small></span>` +
+          `<button class="mini" data-act="drop" data-id="${u[0].id}">${ok ? '맡기기' : '남겨 두기'}</button></div>`;
+      }).join('');
+    }
+    return html + '</div>';
+  }
+
+  // ---------- 통행료 바리케이드 (23장 ⑥) ----------
+  function buildBarricade(meta) {
+    const F = LS.Factions;
+    const b = F.barAt(state);
+    if (!b) return null;
+    let html = `<div class="pn-title">${esc(meta.label)}</div><div class="pn-sub">통행료 바리케이드</div>`;
+    const clues = b.clues.length
+      ? '<div class="act-sub">정찰로 알게 된 단서</div><ul class="person-list clues">' + b.clues.map((c) => `<li>${esc(c)}</li>`).join('') + '</ul>'
+      : '';
+    if (b.resolved) {
+      const t = { paid: '통행료를 내고 지나갈 수 있다', help: '일손을 빌려주고 지나갈 수 있다', talk: '협상해서 지나갈 수 있다', break: '밀고 지나갔다', detour: `우회한다 · 이곳을 지나는 다음 구간은 +${hoursLabel(LS.FACTION_RULES.detourMin)}` }[b.resolved];
+      return html + `<div class="pn-info">${esc(t)}</div>` + clues;
+    }
+    const from = b.from ? LS.LOCATIONS[b.from].name : null;
+    html += `<div class="pn-info">요구: <b>${esc(F.costText(F.tollOf(state, b)))}</b>${b.discount < 1 ? ' (협상으로 절반)' : ''}${from ? ` · 온 길(${esc(from)})로 돌아가는 건 막지 않는다` : ''}</div>`;
+    html += clues || '<div class="pn-info dim">누가 세운 바리케이드인지 아직 몰라요. [주변 정찰](2인 1시간)로 단서 1~2개, 김나래가 있으면 하나 더 찾아요.</div>';
+    html += runningTasks((t) => t.locId === state.locationId && (t.type === 'helpout' || t.type === 'parley'));
+    if (b.offer === 'help') html += actionBlock('barhelp', 'helpout', '일손을 빌려 주기 (2시간)', { purpose: 'barricade', help: '다친 사람을 돌보고 발전기를 손봐 줘요. 끝나면 지나갈 수 있어요.' });
+    if (b.offer === 'parley') html += actionBlock('parley', 'parley', '말로 깎아 보기 (30분)', { purpose: 'parley' });
+    const ch = F.barricadeChoices(state);
+    html += '<div class="siege-acts">' + ch.map((c, i) => (c.run && !c.resolve ? '' :
+      `<button class="act-go" data-act="barchoice" data-i="${i}" ${c.disabled ? 'disabled' : ''}>${esc(c.label)}<small>${esc(c.desc || '')}</small></button>`)).join('') + '</div>';
+    return html;
+  }
+
+  // ---------- 연줄·기록 (18~19장): 리더 신뢰·집단 평판·최근 원인·엔딩 기록 ----------
+  function buildTies() {
+    const F = LS.Factions;
+    let html = '<div class="pn-title">연줄 · 기록</div><div class="pn-sub">리더 신뢰와 외부 집단 평판</div>';
+    html += `<div class="act"><div class="act-head"><b>리더 신뢰 ${state.trust} / 100</b><span>일행 공통</span></div><div class="act-help">${esc(F.trustStage(state.trust).text)}</div></div>`;
+    Object.keys(LS.FACTIONS).forEach((k) => {
+      const f = LS.FACTIONS[k];
+      const v = F.rep(state, k);
+      const st = F.stanceOf(state, k);
+      const why = (state.repWhy[k] || []).slice(0, 3);
+      html += `<div class="act tie ${st.key}"><div class="act-head"><b>${esc(f.name)}</b><span>${F.signed(v)} · ${st.label}</span></div>` +
+        `<div class="tie-bar"><div style="left:${(v + 10) * 5}%"></div></div>` +
+        `<div class="act-help">대표 ${esc(f.leader)} · ${esc(f.role)} · ${esc(st.effect)}</div>` +
+        (why.length ? '<ul class="person-list">' + why.map((w) => `<li>${F.signed(w.delta)} · ${esc(w.why)} <small>(${LS.Clock.fullLabel(w.minute)})</small></li>`).join('') + '</ul>' : '') + '</div>';
+    });
+    const rec = state.record;
+    html += '<div class="act"><div class="act-head"><b>여정 기록</b><span>엔딩 판정에 쓰여요</span></div><div class="pn-rows">' +
+      `<div>도운 사람 ${rec.helped.length}명 (안전하게 데려다줌·맡김)</div>` +
+      `<div>내려놓은 선택 ${rec.letGo.length}번 (강제 하차·원치 않는 잔류)</div>` +
+      (rec.rumors.length ? `<div>퍼질 소문 ${rec.rumors.filter((r) => !r.spread).length}건 (14일째 안부 방송에서 모든 집단 평판 -1)</div>` : '') +
+      '</div></div>';
+    return html;
   }
 
   // ---------- 건물 ----------
@@ -205,6 +317,8 @@ LS.Panel = (function () {
     const meta = loc.spots.find((s) => s.id === spotId);
     const spot = place.spots[spotId];
     if (!meta || !spot || spot.absent) return null;
+    if (spot.type === 'refuge') return buildRefuge(meta);
+    if (spot.type === 'barricade') return buildBarricade(meta);
     const T = LS.SPOT_TYPES[spot.type];
     let html = `<div class="pn-title">${esc(meta.label)}</div><div class="pn-sub">${esc(T.name)}</div>`;
     html += runningTasks((t) => t.locId === state.locationId && t.spotId === spotId);
@@ -445,8 +559,17 @@ LS.Panel = (function () {
     // 결정 버튼은 정보 바로 아래에 (면담·검사 블록 아래로 내려가 스크롤하지 않게)
     html += '<div class="person-decide">' +
       `<button class="act-go" data-act="person" data-do="accept" data-id="${id}" ${free < need ? 'disabled' : ''}>태운다<small>${e.kind === 'join' ? '동료로 공항까지' : esc(e.destText) + '까지'}</small></button>` +
+      (e.altTemp ? `<button data-act="person" data-do="acceptAlt" data-id="${id}" ${free < need ? 'disabled' : ''}>${esc(e.altTemp.destText)}까지만<small>도착하면 맡김 · 평판 +${e.altTemp.rep}</small></button>` : '') +
       `<button data-act="person" data-do="support" data-id="${id}" ${food < S ? 'disabled' : ''}>물자만<small>식량 ${S}인분</small></button>` +
       `<button data-act="person" data-do="refuse" data-id="${id}">거절<small>평판 변화 없음</small></button></div>`;
+    // 22장 ③ 만석: 기존 동료를 내리게 해서 자리를 만든다 (하차 방식에 따라 신뢰·평판이 바뀐다)
+    if (free < need) {
+      const cands = state.crew.filter((m) => m.id !== 'yoon_jaeha');
+      html += `<div class="act"><div class="act-head"><b>자리 만들기</b><span>${need - free}자리 더 필요</span></div>` +
+        `<div class="act-help">${esc(LS.Factions.dropText(LS.Factions.refugeAt(state.locationId) ? 'stay' : 'force'))}</div>` +
+        cands.map((m) => `<div class="trade-row"><span>${esc(R().name(m.id))}<small>${esc(LS.CHARACTERS[m.id].role)}</small></span><button class="mini" data-act="drop" data-id="${m.id}" data-back="${id}">내리게 하기</button></div>`).join('') +
+        `<div class="pn-info dim">좌석 복구(6→8석) 설비는 6단계에서 열려요.</div></div>`;
+    }
     html += runningTasks((t) => t.person === id);
     if (!r.interviewed) html += actionBlock('iv:' + id, 'interview', '면담 (1시간)', { person: id });
     if (!r.inspected) html += actionBlock('in:' + id, 'inspect', '검사 (1시간)', { person: id });
@@ -454,7 +577,7 @@ LS.Panel = (function () {
     return html;
   }
 
-  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp, repair: buildRepair, siege: buildSiege, person: buildPerson };
+  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp, repair: buildRepair, siege: buildSiege, person: buildPerson, ties: buildTies };
 
   function render() {
     const box = $('panel');
@@ -498,6 +621,29 @@ LS.Panel = (function () {
         return;
       }
       if (act === 'driver') { driverSel = b.dataset.id; render(); return; }
+      // 5단계 2차: 하차·대피소·바리케이드
+      if (act === 'drop') {
+        const back = b.dataset.back ? { kind: 'person', arg: b.dataset.back } : (current && current.kind === 'spot' ? { kind: 'spot', arg: current.arg } : null);
+        LS.Time.handle([{ dialog: LS.Factions.dropEvent(state, b.dataset.id, back) }]);
+        return;
+      }
+      if (act === 'trade' || act === 'donate' || act === 'news') {
+        const id = state.locationId;
+        const res = act === 'trade' ? LS.Factions.trade(state, id, b.dataset.id) : act === 'donate' ? LS.Factions.donate(state, id) : LS.Factions.news(state, id);
+        LS.UI.toast(res.error || res.text);
+        LS.UI.renderAll();
+        return;
+      }
+      if (act === 'barchoice') {
+        const c = LS.Factions.barricadeChoices(state)[Number(b.dataset.i)];
+        if (!c || c.disabled) return;
+        // 고른 결과를 바로 적용하고, 결과 대사를 대화창으로 보여 준다
+        const r = (c.resolve ? c.resolve(state) : c.result) || {};
+        if (c.run) c.run(state);
+        LS.Time.handle([{ dialog: { title: '통행료 바리케이드', screen: 'outside', logDetail: `선택: ${c.label}`,
+          lines: r.lines && r.lines.length ? r.lines : [{ speaker: 'narration', text: c.label }], choices: [{ label: '알았다' }] } }]);
+        return;
+      }
       if (act === 'start') {
         const type = b.dataset.type;
         const key = b.dataset.key;
@@ -505,6 +651,7 @@ LS.Panel = (function () {
         if (LS.Tasks.DEF[type].timed || type === 'shelter') opts.hours = hours[key] || defHours(type);
         if (b.dataset.clear) { opts.clear = true; opts.sleepAfter = !!clearSleep[b.dataset.spot]; }
         if (b.dataset.person) opts.person = b.dataset.person;
+        if (b.dataset.purpose) opts.purpose = b.dataset.purpose;
         const res = LS.Tasks.start(state, type, sel[key] || [], opts);
         if (res.error) LS.UI.toast(res.error);
         else if (state.guides.time && state.hints.assigned < 2) {

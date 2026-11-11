@@ -31,6 +31,8 @@ LS.ASSETS = {
     jung_minkyung: 'images/portraits/jung_minkyung.svg',
     jung_hayul: 'images/portraits/jung_hayul.svg',
     seo_dongjin: 'images/portraits/seo_dongjin.svg',
+    song_jiho: 'images/portraits/song_jiho.svg',
+    lim_hyejin: 'images/portraits/lim_hyejin.svg',
     radio: 'images/portraits/radio.svg'
   },
   icons: {

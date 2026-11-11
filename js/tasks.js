@@ -37,7 +37,14 @@ LS.Tasks = (function () {
                        help: '두 사람이 1시간 이야기해요. 정신력이 낮은 쪽 +5, 상대 +2 (각자 하루 1회).' },
     repair:          { label: '버스 정비',       crew: 1, minutes: 180, drain: 'heavy', mistake: 'repair', heavy: true, outside: true,
                        help: '부품 2개로 버스를 손봐요. 3시간 · 내구도 +15. 부품은 시작할 때 써요.' },
-    fight:           { label: '무리 정리',       crew: 1, multi: true, minutes: 30, outside: true, noSlow: true, system: true }
+    fight:           { label: '무리 정리',       crew: 1, multi: true, minutes: 30, outside: true, noSlow: true, system: true },
+    // 5단계 2차: 대피소·바리케이드
+    lodge:           { label: '대피소 숙박',     crew: 1, multi: true, timed: true, rest: 'sleepBuilding', outside: true, noWork: true, isSleep: true,
+                       help: '대피소 안에서 자요. 기력 +5/시간 · 깊은 잠. 묵는 동안 버스도 담장 안에 세워서 이곳에는 무리가 오지 않아요. 대가는 일행 전체 한 번이에요.' },
+    helpout:         { label: '일손 돕기',       crew: 1, minutes: 120, drain: 'heavy', heavy: true, outside: true,
+                       help: '2시간 동안 다친 사람을 돌보고 발전기·울타리를 손봐 줘요. 평판이 오른다 (대피소마다 하루 한 번).' },
+    parley:          { label: '협상',            crew: 1, minutes: 30, drain: 'light', outside: true, noSlow: true,
+                       help: '30분 동안 말로 통행료를 깎아 봐요. 실패할 수도 있어요 (한 번만).' }
   };
 
   const PHASE = { check: '확인·바리케이드 치는 중', walk: '가는 중', sleep: '자는 중', return: '돌아오는 중', hold: '위협 앞에서', clear: '정리·바리케이드 치는 중' };
@@ -173,12 +180,29 @@ LS.Tasks = (function () {
       if (state.locationId === 'roadside') return '도로 위에서는 할 수 없다';
     }
     if (type === 'remove_obstacle' && !(state.roadside && state.roadside.blocked)) return '치울 장애물이 없다';
+    if (type === 'lodge') return LS.Factions.lodgeBlock(state);
+    if (type === 'helpout' || type === 'parley') {
+      if (state.tasks.some((t) => (t.type === 'helpout' || t.type === 'parley') && t.locId === state.locationId)) return '이미 누군가 가 있다';
+      if (opts.purpose === 'refuge') {
+        const rf = LS.Factions.refugeAt(state.locationId);
+        if (!rf) return '대피소가 아니다';
+        if (!LS.Factions.entry(state, state.locationId).open) return LS.Factions.entry(state, state.locationId).why;
+        const hb = LS.Factions.helpBlock(state, state.locationId);
+        if (hb) return hb;
+      } else {
+        const b = LS.Factions.barAt(state);
+        if (!b || b.resolved) return '막힌 바리케이드가 없다';
+        if (type === 'helpout' && b.offer !== 'help') return '먼저 협상해야 한다';
+        if (type === 'parley' && b.offer !== 'parley') return b.talkTried ? '이미 협상해 봤다' : '먼저 협상해야 한다';
+        if (LS.Factions.hostileOwner(state, b)) return '적대 집단이라 상대해 주지 않는다';
+      }
+    }
     return '';
   }
 
   // 모두 밖으로 나가게 되는가 (버스가 비면 엔진이 꺼진다)
   function wouldEmptyBus(state, type, ids) {
-    if (!DEF[type].outside) return false;
+    if (!DEF[type].outside || type === 'lodge') return false;   // 대피소 숙박은 버스도 담장 안에 둔다
     return state.crew.every((m) => ids.includes(m.id) || isOutside(state, m));
   }
 
@@ -223,6 +247,7 @@ LS.Tasks = (function () {
       spotId: opts.spotId || null,
       routeKey: opts.routeKey || null,
       person: opts.person || null,       // 면담·검사 대상 (만남 id)
+      purpose: opts.purpose || null,     // 일손 돕기·협상: refuge | barricade | parley
       startedAt: state.minute,
       workDone: 0,
       workTotal: workMinutes(state, type, ids, opts),
@@ -240,6 +265,7 @@ LS.Tasks = (function () {
       state.resources.parts -= C().repair.parts;
       detail += ` · 부품 -${C().repair.parts}`;
     }
+    if (type === 'lodge') detail += ` · ${LS.Factions.startLodge(state, opts.hours || 8)}`;
     if (type === 'shelter') {
       const spot = spotOf(state, task);
       task.walk = spot.walk;
@@ -586,6 +612,13 @@ LS.Tasks = (function () {
       summary = '건물별 보급 가능성을 확인하고 경보 함정을 설치했다 (무리가 2시간 거리에 오면 울린다)';
       const seen = LS.Zombie.onScouted(state);
       if (seen) { parts.push(seen); important = true; }
+      const clue = LS.Factions.onScouted(state, ms);   // 통행료 바리케이드 단서 (23장 ⑥)
+      if (clue) { parts.push(clue); important = true; }
+    }
+
+    if ((task.type === 'helpout' || task.type === 'parley') && done) {
+      summary = LS.Factions.onHelpDone(state, task, ms) || '돌아왔다';
+      important = true;
     }
 
     if (task.type === 'repair') {

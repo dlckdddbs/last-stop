@@ -103,7 +103,16 @@ Object.assign(LS.ENCOUNTERS, {
       wound: { hero: '소매의 피는 아이가 넘어져 무릎이 까진 걸 닦은 자국이다. 둘 다 물린 자국은 없다', other: '물린 자국은 안 보이지만, 소매의 피가 어디서 났는지는 확실치 않다' },
       grumble: '"아이는 무서워해요. 빨리 해 주세요."'
     },
-    acceptLine: '고맙습니다… 하율아, 인사해.'
+    acceptLine: '고맙습니다… 하율아, 인사해.',
+    // 22장 ③: 학교까지 이송 (좌석 2개 확보 후). 주민 평판 +2~+3 → [임시] +2
+    altTemp: {
+      dest: 'res_school', destText: '초등학교 대피소', faction: 'residents', rep: 2,
+      acceptLine: '학교요? 거기 아이들이 모여 있다고 들었어요. 거기까지라도 부탁드려요.',
+      farewell: [
+        { speaker: 'jung_minkyung', text: '여기라면 하율이도 덜 무서워하겠어요. 정말 고마워요.' },
+        { speaker: 'jung_hayul', text: '버스 고마워요! 안녕!' }
+      ]
+    }
   },
   // 서동진 · 약사/의료 · 주거 약국
   seo_dongjin: {

@@ -110,8 +110,39 @@ LS.CHARACTERS = {
   }
 };
 
+// 대피소에서 만나는 사람 (합류하지 않는다). 5단계 2차
+Object.assign(LS.CHARACTERS, {
+  song_jiho: {
+    name: '송지호',
+    role: '교사 · 주민 · 초등학교 대피소',
+    host: true,
+    canDrive: false,
+    traits: ['학교에 남아 아이들을 돌본다 (합류하지 않음)', '아이 명단을 공항에 전해 줄 사람을 찾는다 (부탁은 다음 업데이트)']
+  },
+  lim_hyejin: {
+    name: '임혜진',
+    role: '주민 대피소 연합 대표 · 자급 마을',
+    host: true,
+    canDrive: false,
+    traits: ['자급 마을을 지킨다 (합류하지 않음)', '연합 무전망으로 소식을 주고받는다']
+  }
+});
+
+// 소속 집단 (16장 직책·소속). 없으면 무소속
+const FACTION_OF = {
+  lee_sua: 'medical', seo_dongjin: 'medical',
+  oh_taeseok: 'merchant', kim_narae: 'merchant',
+  jung_minkyung: 'residents', jung_hayul: 'residents', song_jiho: 'residents', lim_hyejin: 'residents'
+};
+Object.keys(FACTION_OF).forEach((id) => { LS.CHARACTERS[id].faction = FACTION_OF[id]; });
+
+// 대피소에 맡길 수 있는 사람의 종류 (REFUGES.handover와 맞춘다)
+LS.CHARACTERS.jung_minkyung.family = 'jung';
+LS.CHARACTERS.jung_hayul.family = 'jung';
+
 // 대사창에 나오는 인물이 아닌 화자
 LS.SPEAKERS = {
   narration: { name: '', portrait: null },
-  radio: { name: '라디오', portrait: 'radio' }
+  radio: { name: '라디오', portrait: 'radio' },
+  barricade: { name: '바리케이드의 사람', portrait: null }
 };

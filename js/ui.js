@@ -102,6 +102,16 @@ LS.UI = (function () {
   // ---------- 정차 외부 ----------
   function spotShort(spot) {
     const T = LS.SPOT_TYPES[spot.type];
+    if (spot.type === 'refuge') {
+      const rf = LS.Factions.refugeAt(state.locationId);
+      return rf ? `${LS.FACTIONS[rf.faction].name} · ${LS.Factions.stanceOf(state, rf.faction).label}` : '';
+    }
+    if (spot.type === 'barricade') {
+      const b = LS.Factions.barAt(state);
+      if (!b) return '';
+      if (!b.resolved) return `길을 막고 있다${b.clues.length ? ` · 단서 ${b.clues.length}개` : ''}`;
+      return { paid: '통행료를 냈다', help: '일손을 빌려줬다', talk: '협상했다', break: '밀고 지나갔다', detour: '우회한다' }[b.resolved] || '';
+    }
     if (T.loot) {
       if (spot.farmedOnce) return LS.World.isEmpty(spot) ? '수색 완료' : '일부 남음';
       if (spot.checkedEmpty === true) return '비어 있음';
@@ -131,7 +141,7 @@ LS.UI = (function () {
       const spot = place.spots[sp.id];
       const T = LS.SPOT_TYPES[sp.type];
       const work = state.tasks.filter((t) => t.locId === state.locationId && t.spotId === sp.id);
-      html += `<button class="spot ${work.length ? 'busy' : ''} ${sp.type === 'shelter' ? 'shelter' : ''}" data-spot="${sp.id}" style="left:${sp.x}%;top:${sp.y}%">` +
+      html += `<button class="spot ${work.length ? 'busy' : ''} ${sp.type === 'shelter' ? 'shelter' : ''} ${sp.type === 'refuge' ? 'refuge' : ''} ${sp.type === 'barricade' ? 'barricade' : ''}" data-spot="${sp.id}" style="left:${sp.x}%;top:${sp.y}%">` +
         `<b>${esc(sp.label)}</b><small>${esc(T.name)} · ${esc(spotShort(spot))}</small>` +
         work.map((t) => `<span class="spot-work">${esc(t.members.map((id) => R().name(id)).join('·'))} · ${esc(LS.Tasks.labelFor(state, R().member(state, t.members[0])))}</span>`).join('') +
         '</button>';
@@ -148,7 +158,7 @@ LS.UI = (function () {
     if (camping.length) {
       html += '<div class="camp-mark">' + camping.map((t) => `${t.type === 'camp' ? '침낭' : '경계'}: ${esc(t.members.map((id) => R().name(id)).join('·'))} (${R().hoursLabel(LS.Tasks.eta(state, t))})`).join(' · ') + '</div>';
     }
-    if (loc.exit) html += '<div class="scene-note">도시 외곽의 끝. 주거 지역은 이후 단계에서 열립니다.</div>';
+    if (loc.exit) html += `<div class="scene-note">${esc(LS.REGIONS[loc.region].name)}으로 들어가는 길목. 이후 단계에서 열립니다.</div>`;
     const zs = LS.Zombie.status(state);
     if (zs) html += `<div class="z-banner ${zs.level}">${esc(zs.text)}</div>`;
     const areaLabel = loc.roadside && state.roadside.blocked ? '장애물 조사·제거' : '주변 정찰';
@@ -187,6 +197,7 @@ LS.UI = (function () {
     html += '<div class="scene-actions">' +
       '<button data-ui="bus">휴식 · 대화</button>' +
       '<button data-ui="meal">식량 · 배급</button>' +
+      '<button data-ui="ties">연줄 · 기록</button>' +
       `<button data-ui="engine">${state.bus.engineOn ? '엔진 끄기' : '엔진 켜기'}</button></div>`;
     return html;
   }
@@ -318,7 +329,7 @@ LS.UI = (function () {
         `<div class="crew-bars"><span>HP</span><div class="bar"><div class="hp" style="width:${m.hp}%"></div></div>` +
         `<span>기력</span><div class="bar"><div class="energy" style="width:${m.energy}%"></div></div>` +
         `<span>정신</span><span><span class="mental-tag ${mentalClass(stage)}">${stage}</span> <small class="deficit">결핍 ${m.deficit}</small></span></div></div></button>`;
-    }).join('') + `<div class="crew-trust">리더 신뢰<br><b>${state.trust}</b> / 100</div>`;
+    }).join('') + `<button class="crew-trust" data-ties="1" title="누르면 연줄·기록">리더 신뢰<br><b>${state.trust}</b> / 100</button>`;
   }
 
   // ---------- 기록 ----------
@@ -419,6 +430,7 @@ LS.UI = (function () {
       setScreen(b.dataset.screen);
     });
     $('crew-list').addEventListener('click', (e) => {
+      if (e.target.closest('[data-ties]') && !state.dialogOpen) { LS.Panel.open('ties'); return; }
       const c = e.target.closest('[data-crew]');
       if (!c || state.dialogOpen) return;
       if (LS.Panel.selectedCrew() === c.dataset.crew) LS.Panel.close(); else LS.Panel.open('crew', c.dataset.crew);

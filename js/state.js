@@ -92,6 +92,7 @@ LS.State = (function () {
       gameOver: false
     };
     LS.World.generate(state);
+    LS.Factions.setup(state);          // 평판 이유·엔딩 기록·대피소·바리케이드 (5단계)
     return state;
   }
 

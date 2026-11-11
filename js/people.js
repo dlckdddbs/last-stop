@@ -74,6 +74,26 @@ LS.People = (function () {
       run: (s) => accept(s, id),
       result: { lines: [{ speaker: e.who[0], text: e.acceptLine }] }
     }];
+    // 22장 ③ 만석의 가족: 학교 같은 안전한 곳까지만 이송
+    if (e.altTemp) {
+      list.push({
+        label: `${e.altTemp.destText}까지만 태운다`,
+        desc: free < need ? `좌석이 모자라다 (${need}자리 필요)` : `임시 동행 · 도착하면 맡기고 ${LS.FACTIONS[e.altTemp.faction].name} 평판 +${e.altTemp.rep}`,
+        disabled: free < need,
+        run: (s) => accept(s, id, true),
+        result: { lines: [{ speaker: e.who[0], text: e.altTemp.acceptLine }] }
+      });
+    }
+    // 만석이면: 기존 동료를 내리게 해서 자리를 만들 수 있다 (하차 방식에 따라 관계가 바뀐다)
+    if (free < need && withTalk) {
+      list.push({
+        label: '자리를 만든다 (동료를 내리게 한다)',
+        desc: '사람 패널에서 누구를 내리게 할지 고른다 · 하차 방식에 따라 신뢰·평판이 바뀐다',
+        run: () => setTimeout(() => LS.Panel.open('person', id), 0),
+        result: { lines: [{ speaker: 'narration', text: '버스 안을 둘러본다. 누군가는 내려야 한다.' }] }
+      });
+      if (need > 1) list.push({ label: '좌석을 복구한다', desc: '좌석 복구 설비(부품 3·4시간)는 6단계에서 열려요', disabled: true });
+    }
     if (withTalk) {
       list.push({
         label: '먼저 이야기해 본다',
@@ -97,15 +117,17 @@ LS.People = (function () {
     return list;
   }
 
-  function accept(state, id) {
+  // alt: 만석의 가족처럼 정해진 안전한 곳까지만 태운다 (e.altTemp)
+  function accept(state, id, alt) {
     const e = enc(id);
     const r = rec(state, id);
+    const temp = alt ? e.altTemp : (e.kind !== 'join' ? { dest: e.dest, destText: e.destText } : null);
     e.who.forEach((cid) => {
-      if (!LS.State.addMember(state, cid, e.kind === 'join' ? LS.CHARACTERS[cid].role : `임시 동행 · ${e.destText}까지`)) return;
+      if (!LS.State.addMember(state, cid, temp ? `임시 동행 · ${temp.destText}까지` : LS.CHARACTERS[cid].role)) return;
       const m = R().member(state, cid);
-      if (e.kind !== 'join') m.temp = { enc: id, dest: e.dest, from: state.locationId, thief: e.kind === 'thief' };
+      if (temp) m.temp = { enc: id, dest: temp.dest, from: state.locationId, thief: e.kind === 'thief', rep: alt ? { faction: e.altTemp.faction, amount: e.altTemp.rep } : null };
     });
-    r.status = e.kind === 'join' ? 'joined' : 'riding';
+    r.status = temp ? 'riding' : 'joined';
   }
 
   function support(state, id) {
@@ -124,10 +146,11 @@ LS.People = (function () {
   function decide(state, id, what) {
     const r = rec(state, id);
     if (r.status !== 'met') return;
-    if (what === 'accept') {
+    if (what === 'accept' || what === 'acceptAlt') {
       if (seatsFree(state) < enc(id).who.length) { LS.UI.toast('좌석이 모자라요.'); return; }
-      accept(state, id);
-      LS.UI.toast(`${whoNames(enc(id))}: "${enc(id).acceptLine}"`);
+      const alt = what === 'acceptAlt' && !!enc(id).altTemp;
+      accept(state, id, alt);
+      LS.UI.toast(`${whoNames(enc(id))}: "${alt ? enc(id).altTemp.acceptLine : enc(id).acceptLine}"`);
     }
     if (what === 'support') support(state, id);
     if (what === 'refuse') refuse(state, id);
@@ -195,17 +218,23 @@ LS.People = (function () {
   function farewellEvent(state, eid, ms) {
     const e = enc(eid);
     const thieves = ms.some((m) => m.temp.thief);
+    const alt = ms[0].temp.rep && e.altTemp;
     const lines = thieves
       ? [{ speaker: ms[0].id, text: '여기서 내리겠소. 신세 졌소.' }, { speaker: 'narration', text: '두 사람은 식량 상자를 한 번 돌아보고 내렸다.' }]
-      : (e.farewell || [{ speaker: ms[0].id, text: '여기서 내릴게요. 고마웠어요.' }]);
+      : (alt ? e.altTemp.farewell : e.farewell) || [{ speaker: ms[0].id, text: '여기서 내릴게요. 고마웠어요.' }];
+    const rp = ms[0].temp.rep;
     return {
       title: `${whoNames(e)}: 목적지`, screen: 'outside', lines,
+      observations: thieves ? [] : ['목적지까지 안전하게 데려다줬다 (도운 사람으로 기록)'].concat(rp ? [`${LS.FACTIONS[rp.faction].name} 평판 +${rp.amount}`] : []),
       choices: [{
         label: '작별한다',
         run: (s) => {
+          const ids = ms.map((m) => m.id);
           ms.forEach((m) => LS.State.killMember(s, m.id, 'left'));
           rec(s, eid).status = 'arrived';
           LS.State.addLog(s, `${josa(whoNames(e), '이가')} 내렸다`, false, 'event', `임시 동행 · ${LS.State.location(s).name}`);
+          if (!thieves) ids.forEach((x) => LS.Factions.addRecord(s, 'helped', x, 'delivered'));
+          if (rp) LS.Factions.changeRep(s, rp.faction, rp.amount, `${josa(whoNames(e), '을를')} ${LS.State.location(s).name}까지 데려다줬다`);
         }
       }]
     };
@@ -219,12 +248,21 @@ LS.People = (function () {
     m.violations = (m.violations || 0) + 1;
     const second = m.violations >= 2;
     if (second) m.leaveAtNext = true;
-    LS.State.addLog(state, `${nm(id)}: 합류 조건을 어겼다`, true, 'event', `${c.joinCondition} · ${why} · ${second ? '다음 장소에서 내리겠다고 한다' : '첫 경고'}`);
+    // 참조 A: 1회 위반 당사자 정신력 -3 · 2회 위반 리더 신뢰 -4, 소속 평판 -2, 당사자 -5
+    R().addMental(m, second ? -5 : -3);
+    const notes = [];
+    if (second) {
+      notes.push(LS.Factions.changeTrust(state, -4, `${nm(id)}의 합류 조건을 두 번 어겼다`));
+      if (c.faction) notes.push(LS.Factions.changeRep(state, c.faction, -2, `${nm(id)}의 합류 조건을 두 번 어겼다`));
+    }
+    LS.State.addLog(state, `${nm(id)}: 합류 조건을 어겼다`, true, 'event', `${c.joinCondition} · ${why} · ${second ? '다음 장소에서 내리겠다고 한다' : '첫 경고'}${notes.filter(Boolean).length ? ' · ' + notes.filter(Boolean).join(' · ') : ''}`);
     return [{
       dialog: {
         title: `${nm(id)}의 조건`, screen: state.travel ? 'travel' : 'outside',
         lines: [{ speaker: id, text: second ? c.leaveLine : c.warnLine }],
-        observations: [`합류 조건: ${c.joinCondition}`, why, second ? '두 번째: 다음에 서는 장소에서 내린다' : '첫 경고: 한 번 더 어기면 내리겠다고 한다'],
+        observations: [`합류 조건: ${c.joinCondition}`, why, second
+          ? `두 번째: 다음에 서는 장소에서 내린다 · 리더 신뢰 -4${c.faction ? ` · ${LS.FACTIONS[c.faction].name} 평판 -2` : ''} · ${nm(id)} 정신력 -5`
+          : `첫 경고: 한 번 더 어기면 내리겠다고 한다 · ${nm(id)} 정신력 -3`],
         choices: [{ label: second ? '알았다' : '조심하겠다' }]
       }
     }];
@@ -234,7 +272,7 @@ LS.People = (function () {
     return {
       title: `${nm(m.id)}의 하차`, screen: 'outside',
       lines: [{ speaker: m.id, text: '약속한 대로 여기서 내리겠소.' }, { speaker: 'narration', text: `${josa(nm(m.id), '은는')} 짐을 챙겨 버스에서 내렸다.` }],
-      observations: ['합류 조건을 두 번 어겼다', '붙잡는 설득은 관계 단계(5단계)에서 연결'],
+      observations: ['합류 조건을 두 번 어겼다', '붙잡는 설득은 6단계(리더 신뢰)에서 연결'],
       choices: [{
         label: '보내 준다',
         run: (s) => {

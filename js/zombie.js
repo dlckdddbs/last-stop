@@ -93,6 +93,8 @@ LS.Zombie = (function () {
 
   // ---------- 등장 판정 (14장 ①·③) ----------
   function spawnChance(state) {
+    // 대피소에 묵는 동안은 버스도 담장 안에 있다 (5단계 [해석])
+    if (LS.Factions && LS.Factions.safeStop(state)) return { p: 0, night: LS.Clock.isNight(state.minute), base: 0, refuge: true };
     const reg = regionDef(state);
     let base = reg.chance;
     if (reg.lateDay && LS.Clock.day(state.minute) >= reg.lateDay) base = reg.lateChance;
@@ -669,6 +671,22 @@ LS.Zombie = (function () {
 
   function siegeActive(state) { return !!z(state).siege; }
 
+  // 소음(바리케이드 돌파 등)으로 근처 무리가 확정 접근한다. 발각 상태로, 도착 시각을 안다
+  function forceHorde(state, minutes, why) {
+    const zz = z(state);
+    if (zz.horde || zz.siege || state.travel) return '';
+    const size = R().pick(regionDef(state).sizes);
+    const S = sizeOf(size);
+    zz.horde = {
+      size, count: R().randInt(S.count[0], S.count[1]),
+      spawnedAt: state.minute, arriveAt: state.minute + minutes, night: LS.Clock.isNight(state.minute),
+      detected: true, coming: true, known: true,
+      alarmed: false, warned: false, halved: false, hide: null, alarmDone: false, seeDone: false
+    };
+    LS.State.addLog(state, `${why}: 무리가 다가온다`, true, 'event', `약 ${H(minutes)} 뒤 도착 · 떠나면 떨쳐낼 수 있다`);
+    return `${why}에 근처 무리가 이쪽으로 온다 (약 ${H(minutes)})`;
+  }
+
   // 주변 정찰을 마쳤을 때: 정찰은 근처 무리도 확인한다 (06장). 이미 오고 있는 무리가 있으면 알게 된다
   function onScouted(state) {
     const h = z(state).horde;
@@ -679,6 +697,6 @@ LS.Zombie = (function () {
 
   return {
     beginStop, onDepart, advance, nextMilestone, nextKnown, status, onEngine, siegeActive, siegeChoices, onScouted,
-    exposeRoll, infect, spawnChance, leaveBlock, sizeOf, clearRoll, clearRisk, clearRiskText
+    exposeRoll, infect, spawnChance, leaveBlock, sizeOf, clearRoll, clearRisk, clearRiskText, forceHorde
   };
 })();

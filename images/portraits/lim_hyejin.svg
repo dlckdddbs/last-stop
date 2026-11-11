@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 임시 초상: 임혜진 (주민 대피소 연합 대표) -->
+  <rect width="256" height="256" fill="#2a3326"/>
+  <path d="M28 256 C34 188 82 164 128 164 C174 164 222 188 228 256 Z" fill="#6b7a4a"/>
+  <rect x="112" y="140" width="32" height="30" fill="#c99a76"/>
+  <ellipse cx="128" cy="106" rx="44" ry="50" fill="#c99a76"/>
+  <path d="M84 100 C82 62 106 52 128 52 C152 52 174 62 172 100 C164 82 146 74 128 74 C110 74 92 82 84 100 Z" fill="#6a6a6a"/>
+  <path d="M150 60 C176 62 184 88 176 104 L170 84 Z" fill="#6a6a6a"/>
+  <ellipse cx="110" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <ellipse cx="146" cy="110" rx="5" ry="4" fill="#2a2a2a"/>
+  <path d="M100 98 L120 100 M136 100 L156 98" stroke="#4a4a4a" stroke-width="3"/>
+  <path d="M116 138 L140 138" stroke="#8a5a48" stroke-width="4"/>
+  <text x="18" y="38" font-family="Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#c6e09a">임</text>
+</svg>

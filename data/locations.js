@@ -106,21 +106,22 @@ LS.LOCATIONS = {
     name: '초등학교', region: 'residential', bg: 'street', map: { x: 760, y: 170 },
     spots: [
       { id: 'rs_meal', label: '급식실', type: 'school', x: 28, y: 42 },
-      { id: 'rs_gym', label: '체육관', type: 'shelter', x: 50, y: 30 }
+      { id: 'rs_gym', label: '체육관 대피소', type: 'refuge', x: 50, y: 30 }
     ]
   },
   res_cross: {
     name: '큰 교차로', region: 'residential', bg: 'street', map: { x: 1010, y: 560 },
     spots: [
       { id: 'rx_gas', label: '교차로 주유소', type: 'gas_station', x: 24, y: 44 },
-      { id: 'rx_cars', label: '사고 차량들', type: 'roadside_car', x: 46, y: 60 }
+      { id: 'rx_cars', label: '사고 차량들', type: 'roadside_car', x: 46, y: 60 },
+      { id: 'rx_bar', label: '교차로 바리케이드', type: 'barricade', x: 64, y: 40 }
     ]
   },
   res_village: {
     name: '자급 마을', region: 'residential', bg: 'outskirts', map: { x: 880, y: 770 },
     spots: [
       { id: 'rv_field', label: '마을 밭 옆 창고', type: 'house', x: 30, y: 44 },
-      { id: 'rv_hall', label: '마을회관', type: 'shelter', x: 48, y: 30 }
+      { id: 'rv_hall', label: '마을회관 (연합 거점)', type: 'refuge', x: 48, y: 30 }
     ]
   },
   res_bridge: {

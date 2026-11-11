@@ -575,3 +575,21 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 #devbox select { max-width: 200px; }
 #devbox .dev-row { display: flex; flex-wrap: wrap; gap: 4px; }
 #devbox button { font-size: 12px; padding: 2px 8px; cursor: pointer; }
+
+/* 5단계 2차: 대피소·바리케이드·연줄 */
+.spot.refuge { border-color: #6fae7a; background: rgba(40, 70, 48, .85); }
+.spot.barricade { border-color: #c9893a; background: rgba(80, 52, 24, .88); }
+.trade-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid rgba(255,255,255,.07); }
+.trade-row:first-of-type { border-top: 0; }
+.trade-row span { display: flex; flex-direction: column; font-size: 13px; }
+.trade-row small { color: #9aa3ab; font-size: 11px; }
+.trade-row .mini { flex: 0 0 auto; }
+.drop-btn { margin-top: 8px; border-color: #a35a4a !important; color: #f0c0b4; }
+.tie .act-head span { font-weight: bold; }
+.tie.trusted .act-head span, .tie.friendly .act-head span { color: #8fd49a; }
+.tie.wary .act-head span { color: #e0b060; }
+.tie.hostile .act-head span { color: #e07a6a; }
+.tie-bar { position: relative; height: 6px; margin: 6px 0 4px; border-radius: 3px; background: linear-gradient(90deg, #8a3a30 0%, #8a6a30 25%, #4a5560 45%, #4a5560 55%, #3a7a4a 75%, #2a8a5a 100%); }
+.tie-bar div { position: absolute; top: -3px; width: 4px; height: 12px; margin-left: -2px; background: #fff; border-radius: 2px; }
+button.crew-trust { cursor: pointer; background: none; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; font-family: inherit; }
+button.crew-trust:hover { border-color: rgba(255,255,255,.2); }

@@ -25,7 +25,7 @@ LS.Travel = (function () {
         { to: rs.from, key: rs.key, baseMinutes: rs.progress, forward: false }
       ];
     }
-    return LS.World.routesFrom(state.locationId, state).map((r) => ({ to: r.to, key: r.key, baseMinutes: r.hours * 60, road: r.road }));
+    return LS.World.routesFrom(state.locationId, state).map((r) => ({ to: r.to, key: r.key, baseMinutes: r.hours * 60 + LS.Factions.extraMinutes(state, r.to), road: r.road, detour: LS.Factions.extraMinutes(state, r.to) }));
   }
 
   function plan(state, toId, driverId) {
@@ -53,6 +53,8 @@ LS.Travel = (function () {
     if (state.bus.durability <= 0) return '버스가 멈췄다 (내구도 0). 정비가 필요하다';
     const outside = state.crew.find((m) => m.task && LS.Tasks.DEF[LS.Tasks.find(state, m.task).type].outside);
     if (outside) return `${LS.Rules.josa(R().name(outside.id), '이가')} 밖에 있다. 돌아와야 출발할 수 있다`;
+    const bar = state.locationId !== 'roadside' ? LS.Factions.blockReason(state, toId) : '';
+    if (bar) return bar;
     const p = plan(state, toId, driverId);
     if (!p) return '갈 수 없는 곳이다';
     if (p.blocked) return '길이 막혀 있다. 먼저 장애물을 치워야 한다';
@@ -78,7 +80,7 @@ LS.Travel = (function () {
       }
     } else {
       const route = LS.World.route(state.locationId, toId);
-      const total = route.hours * 60;
+      const total = route.hours * 60 + LS.Factions.extraMinutes(state, toId);   // 바리케이드 우회
       travel = { key: LS.World.routeKey(state.locationId, toId), from: state.locationId, to: toId, total, progress: 0, event: null, mistake: null };
       // 도로 사건과 운전 실수는 출발할 때 한 구간에 한 번 판정한다
       if (R().chance(LS.World.eventChance(state, travel.key))) travel.event = { type: 'block', at: Math.round(total * R().rand(0.2, 0.8)) };
@@ -255,6 +257,7 @@ LS.Travel = (function () {
     }
     state.routes[t.key].traveled = true;
     state.travel = null;
+    state.arrivedFrom = t.from;   // 바리케이드: 온 길로 돌아가는 건 막지 않는다
     return landAt(state, t.to);
   }
 

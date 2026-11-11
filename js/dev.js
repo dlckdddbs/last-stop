@@ -49,6 +49,7 @@ LS.Dev = (function () {
     clearWork(st);
     clearZombies(st);
     LS.UI.renderAll();
+    st.arrivedFrom = null;
     LS.Time.handle(LS.Travel.landAt(st, id));
   }
 
