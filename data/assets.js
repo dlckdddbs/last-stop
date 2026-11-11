@@ -33,6 +33,7 @@ LS.ASSETS = {
     seo_dongjin: 'images/portraits/seo_dongjin.svg',
     song_jiho: 'images/portraits/song_jiho.svg',
     lim_hyejin: 'images/portraits/lim_hyejin.svg',
+    kwon_sunja: 'images/portraits/kwon_sunja.svg',
     radio: 'images/portraits/radio.svg'
   },
   icons: {

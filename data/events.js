@@ -198,3 +198,10 @@ Object.assign(LS.EVENTS, {
     ]
   }
 });
+
+// 14일째 대피소 안부 방송 (21장): 맡긴 사람 소식·소문·교환 공고는 그때의 상황으로 만든다 (5단계 3차)
+Object.defineProperty(LS.EVENTS, 'radio_d14', {
+  configurable: true, enumerable: true,
+  get() { return LS.Requests.radioD14(LS.game); }
+});
+LS.SCHEDULE.push({ at: 13 * 1440 + 8 * 60, event: 'radio_d14' });

@@ -593,3 +593,9 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
 .tie-bar div { position: absolute; top: -3px; width: 4px; height: 12px; margin-left: -2px; background: #fff; border-radius: 2px; }
 button.crew-trust { cursor: pointer; background: none; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; font-family: inherit; }
 button.crew-trust:hover { border-color: rgba(255,255,255,.2); }
+
+/* 5단계 3차: 부탁 */
+.scene-actions .req-btn { border-color: #d0a94a; color: #f3dc9a; }
+.act.req.urgent { border-color: #c96a4a; }
+.act.req.urgent .act-head span { color: #f0a080; }
+.act.req.promise .act-head span { color: #a8c8f0; }

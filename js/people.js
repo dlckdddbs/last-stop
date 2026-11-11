@@ -94,6 +94,16 @@ LS.People = (function () {
       });
       if (need > 1) list.push({ label: '좌석을 복구한다', desc: '좌석 복구 설비(부품 3·4시간)는 6단계에서 열려요', disabled: true });
     }
+    // 리더 약속 (20장): 자리가 없을 때 데리러 오겠다고 약속한다. 기본 5일
+    if (free < need && e.kind === 'join') {
+      const D = LS.REQUEST_RULES.promiseDays;
+      list.push({
+        label: `데리러 오겠다고 약속한다 (${D}일 안)`,
+        desc: `기한 안에 돌아오면 신뢰 +2·평판 +3 · ${D + LS.REQUEST_RULES.promiseLateDays}일이 지나면 약속 위반 (신뢰 -4·평판 -3)`,
+        run: (s) => LS.Requests.promise(s, id),
+        result: { lines: [{ speaker: e.who[0], text: '…기다릴게요. 꼭 와야 해요.' }] }
+      });
+    }
     if (withTalk) {
       list.push({
         label: '먼저 이야기해 본다',
@@ -128,6 +138,7 @@ LS.People = (function () {
       if (temp) m.temp = { enc: id, dest: temp.dest, from: state.locationId, thief: e.kind === 'thief', rep: alt ? { faction: e.altTemp.faction, amount: e.altTemp.rep } : null };
     });
     r.status = temp ? 'riding' : 'joined';
+    if (e.request && !alt) LS.Requests.accept(state, e.request, {});   // 이송 부탁 (권순자)
   }
 
   function support(state, id) {
@@ -235,6 +246,7 @@ LS.People = (function () {
           LS.State.addLog(s, `${josa(whoNames(e), '이가')} 내렸다`, false, 'event', `임시 동행 · ${LS.State.location(s).name}`);
           if (!thieves) ids.forEach((x) => LS.Factions.addRecord(s, 'helped', x, 'delivered'));
           if (rp) LS.Factions.changeRep(s, rp.faction, rp.amount, `${josa(whoNames(e), '을를')} ${LS.State.location(s).name}까지 데려다줬다`);
+          if (e.request) LS.Time.handle(LS.Requests.onDelivered(s, e.request));   // 이송 부탁 완료
         }
       }]
     };
@@ -246,6 +258,7 @@ LS.People = (function () {
     if (!m) return [];
     const c = LS.CHARACTERS[id];
     m.violations = (m.violations || 0) + 1;
+    m.keptSince = state.minute;   // 5일 준수는 다시 센다
     const second = m.violations >= 2;
     if (second) m.leaveAtNext = true;
     // 참조 A: 1회 위반 당사자 정신력 -3 · 2회 위반 리더 신뢰 -4, 소속 평판 -2, 당사자 -5

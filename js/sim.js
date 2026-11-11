@@ -46,6 +46,9 @@ LS.Sim = (function () {
     // 사람: 2~3일째 도로변의 두 사람, 도둑 (16~17장, 22장)
     out.push(...LS.People.advance(state, prev, next));
 
+    // 부탁 기한·리더 약속·작은 순간 (20~21장)
+    out.push(...LS.Requests.advance(state, prev, next));
+
     // 식중독 회복
     state.crew.forEach((m) => {
       if (m.poisonUntil && prev < m.poisonUntil && next >= m.poisonUntil) LS.State.addLog(state, `${R().name(m.id)}의 식중독이 나았다`, false, 'body');

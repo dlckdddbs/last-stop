@@ -107,7 +107,7 @@ LS.Factions = (function () {
     const rf = refugeAt(id);
     const r = rstate(state, id);
     if (state.minute < r.paidUntil) return { food: 0, note: '이미 대가를 냈다' };
-    if (r.freeLodge > 0) return { food: 0, note: '무료 숙박 1회' };
+    if (r.freeLodge > 0 || (state.flags['freeLodge_' + rf.faction] || 0) > 0) return { food: 0, note: '무료 숙박 1회' };
     return { food: price(state, rf.faction, rf.lodgeFood), note: '' };
   }
 
@@ -117,7 +117,7 @@ LS.Factions = (function () {
     const c = lodgeCost(state, id);
     const r = rstate(state, id);
     if (c.food > 0) pay(state, { food: c.food });
-    else if (c.note === '무료 숙박 1회') r.freeLodge--;
+    else if (c.note === '무료 숙박 1회') { if (r.freeLodge > 0) r.freeLodge--; else state.flags['freeLodge_' + refugeAt(id).faction]--; }
     r.paidUntil = Math.max(r.paidUntil, state.minute + hours * 60);
     return c.food > 0 ? `식량 -${c.food}인분` : c.note;
   }

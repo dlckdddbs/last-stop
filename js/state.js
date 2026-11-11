@@ -29,7 +29,10 @@ LS.State = (function () {
   function addMember(state, id, roleLabel) {
     if (state.crew.some((m) => m.id === id)) return false;
     if (state.crew.length >= state.bus.seats) { addLog(state, `${LS.Rules.josa(LS.CHARACTERS[id].name, '을를')} 태울 좌석이 없다`, true, 'event'); return false; }
-    state.crew.push(member(id));
+    const m = member(id);
+    m.joinedAt = state.minute;         // 합류 시각 (합류 조건 5일 준수·부탁 제안에 쓴다)
+    m.keptSince = state.minute;        // 합류 조건을 지키기 시작한 시각 (위반하면 다시 센다)
+    state.crew.push(m);
     addLog(state, `${LS.CHARACTERS[id].name} 합류`, true, 'event', roleLabel || LS.CHARACTERS[id].role);
     return true;
   }
@@ -93,6 +96,7 @@ LS.State = (function () {
     };
     LS.World.generate(state);
     LS.Factions.setup(state);          // 평판 이유·엔딩 기록·대피소·바리케이드 (5단계)
+    LS.Requests.setup(state);          // 부탁·약속·작은 순간 (5단계 3차)
     return state;
   }
 

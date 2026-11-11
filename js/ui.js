@@ -123,6 +123,12 @@ LS.UI = (function () {
     return '';
   }
 
+  // 이곳에서 할 일이 있는 부탁 (정차 외부 버튼 이름)
+  function reqHere() {
+    const act = state.requests.list.filter((r) => r.status === 'active' && (r.target || []).includes(state.locationId));
+    return act.length ? (act.length === 1 ? LS.Requests.tpl(act[0].tid).title : `할 일 ${act.length}개`) : '';
+  }
+
   function sceneOutside() {
     const loc = LS.State.location(state);
     if (!loc) return '<div class="scene-empty">이동 중이다. 이동 화면이나 지도를 보세요.</div>';
@@ -166,6 +172,7 @@ LS.UI = (function () {
       `<button data-ui="area">${areaLabel}</button>` +
       (state.zombie.siege ? '<button data-ui="siege" class="danger-btn">포위 대응</button>' : '') +
       '<button data-ui="camp">버스 옆 야영</button>' +
+      (reqHere() ? `<button data-ui="requests" class="req-btn">부탁 · ${esc(reqHere())}</button>` : '') +
       '<button data-ui="repair">버스 정비</button>' +
       '<button data-ui="screen" data-screen="bus">버스 안으로</button>' +
       '<button data-ui="screen" data-screen="map">지도 · 출발</button></div>';
@@ -198,6 +205,7 @@ LS.UI = (function () {
       '<button data-ui="bus">휴식 · 대화</button>' +
       '<button data-ui="meal">식량 · 배급</button>' +
       '<button data-ui="ties">연줄 · 기록</button>' +
+      `<button data-ui="requests">부탁 목록 (${state.requests.list.filter((r) => r.status === 'active').length})</button>` +
       `<button data-ui="engine">${state.bus.engineOn ? '엔진 끄기' : '엔진 켜기'}</button></div>`;
     return html;
   }

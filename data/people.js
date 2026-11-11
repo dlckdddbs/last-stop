@@ -132,6 +132,25 @@ Object.assign(LS.ENCOUNTERS, {
   }
 });
 
+// 권순자 · 보행 불편 노인/주민 · 외곽 주택 · 영구 합류 아님 · 자급 마을 이송 2일 (16~17장, 5단계 3차)
+LS.ENCOUNTERS.kwon_sunja = {
+  who: ['kwon_sunja'], kind: 'temp', dest: 'res_village', destText: '자급 마을', where: 'outskirts_houses', pos: { x: 70, y: 66 },
+  request: 'kwon_ride',
+  title: '지팡이를 짚은 할머니',
+  purpose: '자급 마을의 동생네까지 데려다 달라고 한다 (이송 부탁, 2일 안)',
+  condition: '영구 합류 아님 · 자급 마을에서 내린다',
+  intro: [
+    { speaker: 'narration', text: '주택 대문 앞, 지팡이를 짚은 할머니가 버스를 향해 천천히 손을 든다.' },
+    { speaker: 'kwon_sunja', text: '젊은이들, 주거 지역 너머 자급 마을까지만 데려다줄 수 있수? 동생이 거기 살아. 다리가 이래서 걸어서는 못 가.' }
+  ],
+  observed: ['다리가 불편해 걷기 힘들다. 일은 맡길 수 없다', '작은 보따리 하나뿐', '자급 마을까지만 원한다 (좌석 1개)'],
+  opinion: { speaker: 'park_seoyun', text: '자급 마을은 주거 지역 안쪽이에요. 가는 길이긴 한데… 이틀 안에 갈 수 있을까요?' },
+  interview: ['자급 마을에 동생 부부가 산다고 한다. 주민 연합 사람들 이름을 안다', '말에 앞뒤가 맞는다'],
+  inspect: { results: ['보따리: 약봉지, 사진, 떡 몇 개', '상처나 물린 자국은 없다'], grumble: '"늙은이 몸 뒤져서 뭐 나오겠수." 그래도 웃는다' },
+  acceptLine: '고마워요. 신세 좀 질게.',
+  farewell: [{ speaker: 'kwon_sunja', text: '여기야, 여기. 아이고, 살았다.' }]
+};
+
 LS.PEOPLE_RULES = {
   supportFood: 2,          // 물자만 나눠 줄 때 식량 (임시값)
   meetHours: [8, 19],      // 2~3일째 도로변 두 사람이 다가오는 시간대 (임시값)

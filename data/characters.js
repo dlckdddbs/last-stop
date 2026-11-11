@@ -128,11 +128,20 @@ Object.assign(LS.CHARACTERS, {
   }
 });
 
+// 권순자 · 보행 불편 노인 · 주민 · 외곽 주택 · 영구 합류 아님 (16장). 5단계 3차
+LS.CHARACTERS.kwon_sunja = {
+  name: '권순자',
+  role: '보행 불편 노인 · 주민 · 외곽 주택',
+  canDrive: false,
+  elder: true,
+  traits: ['다리가 불편해 일을 맡지 않는다', '자급 마을까지만 간다 (이송 부탁 2일)']
+};
+
 // 소속 집단 (16장 직책·소속). 없으면 무소속
 const FACTION_OF = {
   lee_sua: 'medical', seo_dongjin: 'medical',
   oh_taeseok: 'merchant', kim_narae: 'merchant',
-  jung_minkyung: 'residents', jung_hayul: 'residents', song_jiho: 'residents', lim_hyejin: 'residents'
+  jung_minkyung: 'residents', jung_hayul: 'residents', song_jiho: 'residents', lim_hyejin: 'residents', kwon_sunja: 'residents'
 };
 Object.keys(FACTION_OF).forEach((id) => { LS.CHARACTERS[id].faction = FACTION_OF[id]; });
 

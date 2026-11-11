@@ -44,7 +44,10 @@ LS.Tasks = (function () {
     helpout:         { label: '일손 돕기',       crew: 1, minutes: 120, drain: 'heavy', heavy: true, outside: true,
                        help: '2시간 동안 다친 사람을 돌보고 발전기·울타리를 손봐 줘요. 평판이 오른다 (대피소마다 하루 한 번).' },
     parley:          { label: '협상',            crew: 1, minutes: 30, drain: 'light', outside: true, noSlow: true,
-                       help: '30분 동안 말로 통행료를 깎아 봐요. 실패할 수도 있어요 (한 번만).' }
+                       help: '30분 동안 말로 통행료를 깎아 봐요. 실패할 수도 있어요 (한 번만).' },
+    // 5단계 3차: 부탁에서 하는 일 (조사·재료 찾기·구조). 시간은 부탁마다 다르다
+    errand:          { label: '부탁 일',         crew: 2, minutes: 120, drain: 'heavy', heavy: true, outside: true,
+                       help: '맡은 부탁의 일을 해요. 끝나면 부탁이 완료돼요.' }
   };
 
   const PHASE = { check: '확인·바리케이드 치는 중', walk: '가는 중', sleep: '자는 중', return: '돌아오는 중', hold: '위협 앞에서', clear: '정리·바리케이드 치는 중' };
@@ -101,6 +104,7 @@ LS.Tasks = (function () {
       const R2 = C().road;
       return R2.investigateMin + (ids.includes('yoon_jaeha') ? R2.removeMinFirefighter : R2.removeMin);
     }
+    if (type === 'errand') return LS.Requests.workMinutes(opts.purpose, state);
     // 지역 경험자(김나래): 경로 정찰 2시간 → 1시간 (16장 전문가)
     if (type === 'scout_route' && ids.some((id) => (LS.CHARACTERS[id] || {}).expert === 'local')) return 60;
     return d.minutes || 0;
@@ -181,6 +185,7 @@ LS.Tasks = (function () {
     }
     if (type === 'remove_obstacle' && !(state.roadside && state.roadside.blocked)) return '치울 장애물이 없다';
     if (type === 'lodge') return LS.Factions.lodgeBlock(state);
+    if (type === 'errand') return LS.Requests.errandBlock(state, opts.purpose);
     if (type === 'helpout' || type === 'parley') {
       if (state.tasks.some((t) => (t.type === 'helpout' || t.type === 'parley') && t.locId === state.locationId)) return '이미 누군가 가 있다';
       if (opts.purpose === 'refuge') {
@@ -266,6 +271,7 @@ LS.Tasks = (function () {
       detail += ` · 부품 -${C().repair.parts}`;
     }
     if (type === 'lodge') detail += ` · ${LS.Factions.startLodge(state, opts.hours || 8)}`;
+    if (type === 'errand') LS.Requests.onErrandStart(state, opts.purpose);
     if (type === 'shelter') {
       const spot = spotOf(state, task);
       task.walk = spot.walk;
@@ -388,6 +394,7 @@ LS.Tasks = (function () {
   function taskTitle(state, task) {
     const d = DEF[task.type];
     if (task.type === 'shelter') return `${spotLabel(state, task)} 잠자리`;
+    if (task.type === 'errand') return `부탁: ${LS.Requests.workLabel(state, task.purpose)}`;
     if (task.spotId) return `${spotLabel(state, task)} ${d.label}`;
     if (task.person) return `${LS.ENCOUNTERS[task.person].who.map((id) => R().name(id)).join('·')} ${d.label}`;
     if (task.routeKey) {
@@ -621,6 +628,13 @@ LS.Tasks = (function () {
       important = true;
     }
 
+    let extraOut = [];
+    if (task.type === 'errand') {
+      if (done) { const res = LS.Requests.onErrandDone(state, task, ms); summary = res.summary; extraOut = res.out; }
+      else summary = '부탁 일을 마치지 못했다 (다시 할 수 있다)';
+      important = true;
+    }
+
     if (task.type === 'repair') {
       if (done) {
         const before = state.bus.durability;
@@ -685,7 +699,7 @@ LS.Tasks = (function () {
     LS.State.addLog(state, title, important || reason !== 'done', 'task', detail);
 
     // 파밍 결과·중단·위협은 눌러서 닫을 때까지 알림을 남긴다
-    return [{ stop: true, toast: `${title} · ${summary}${parts.length ? ' · ' + parts.join(' ') : ''}`, important: important || reason !== 'done' || task.type === 'farm' }];
+    return [{ stop: true, toast: `${title} · ${summary}${parts.length ? ' · ' + parts.join(' ') : ''}`, important: important || reason !== 'done' || task.type === 'farm' }].concat(extraOut);
   }
 
   function remove(state, task) {

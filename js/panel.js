@@ -285,6 +285,50 @@ LS.Panel = (function () {
     return html;
   }
 
+  // ---------- 부탁 목록 (20장): 기한·할 일·보상·연락 ----------
+  function buildRequests() {
+    const Q = LS.Requests;
+    const RR = LS.REQUEST_RULES;
+    const list = state.requests.list;
+    const act = list.filter((r) => r.status === 'active');
+    const nN = act.filter((r) => r.kind === 'normal').length;
+    const nU = act.filter((r) => r.kind === 'urgent').length;
+    let html = `<div class="pn-title">부탁 목록</div><div class="pn-sub">일반 ${nN}/${RR.maxNormal} · 급한 용무 ${nU}/${RR.maxUrgent}</div>`;
+    const contact = Q.canContact(state);
+    html += `<div class="pn-info dim">${contact ? '여기 대피소 무전으로 연락할 수 있어요: 기한 연장(1번, 기한이 1/3 넘게 남았을 때) · 포기 알림.' : '기한 연장·포기 알림은 대피소 무전으로 할 수 있어요 (버스의 통신 공간은 6단계).'}</div>`;
+    if (!act.length) html += '<div class="pn-info">맡은 부탁이 없어요. 동료나 대피소 사람이 부탁을 꺼내면 여기에 쌓여요.</div>';
+    const pname = (r) => LS.ENCOUNTERS[r.enc].who.map((x) => R().name(x)).join('·');
+    act.forEach((r) => {
+      const t = Q.tpl(r.tid) || {};
+      const title = r.kind === 'promise' ? `리더 약속: ${pname(r)}` : t.title;
+      const from = r.kind === 'promise' ? '' : r.from ? R().name(r.from) : (r.faction ? LS.FACTIONS[r.faction].name : '');
+      const lf = Q.left(state, r);
+      const here = (r.target || []).includes(state.locationId);
+      html += `<div class="act req ${r.kind}"><div class="act-head"><b>${esc(title)}</b><span>${r.kind === 'urgent' ? '급한 용무' : r.kind === 'promise' ? '약속' : '부탁'}${from ? ' · ' + esc(from) : ''}</span></div>` +
+        `<div class="pn-rows"><div>할 일: ${esc(Q.whereText(r))}${here ? ' · <b>바로 여기</b>' : ''}</div>` +
+        `<div>기한: ${lf == null ? '없음' : lf > 0 ? `${hoursLabel(lf)} 남음 (${LS.Clock.fullLabel(r.deadline)})` : '지남'}${r.extended ? ' · 연장함' : ''}</div>` +
+        (r.kind === 'promise' ? '<div>기한 안: 리더 신뢰 +2 · 평판 +3 / 기한 뒤 2일이 지나면 약속 위반</div>' : `<div>보상: ${esc(Q.rewardText(r))}</div>`) + '</div>';
+      if (t.work && here) html += actionBlock('req:' + r.id, 'errand', `${t.work.label} (${hoursLabel(t.work.minutes)})`, { purpose: r.id });
+      if (t.pay && here) {
+        const pb = Q.payBlock(state, r.id);
+        html += `<button class="act-go" data-act="reqpay" data-id="${esc(r.id)}" ${pb ? 'disabled' : ''}>${esc(LS.Factions.costText(t.pay))} 내고 끝내기</button>` + (pb ? `<div class="act-reason">${esc(pb)}</div>` : '');
+      }
+      if (contact && r.kind !== 'promise') {
+        const eb = Q.extendBlock(state, r.id);
+        html += '<div class="hours">' + (r.kind === 'normal' && r.deadline != null ? `<button class="mini" data-act="reqext" data-id="${esc(r.id)}" ${eb ? 'disabled' : ''} title="${esc(eb)}">기한 연장 연락${eb ? ` (${esc(eb)})` : ''}</button>` : '') +
+          `<button class="mini" data-act="reqgive" data-id="${esc(r.id)}">포기한다고 알리기 (평판 -1)</button></div>`;
+      }
+      html += runningTasks((x) => x.type === 'errand' && x.purpose === r.id) + '</div>';
+    });
+    const past = list.filter((r) => r.status !== 'active').slice(-5).reverse();
+    if (past.length) {
+      const ST = { done: '완료', failed: '실패', gaveup: '포기', broken: '약속 위반' };
+      html += '<div class="act-sub">끝난 부탁</div><ul class="person-list">' + past.map((r) =>
+        `<li>${esc(r.kind === 'promise' ? `약속: ${pname(r)}` : Q.tpl(r.tid).title)} · ${ST[r.status] || r.status}</li>`).join('') + '</ul>';
+    }
+    return html;
+  }
+
   // ---------- 연줄·기록 (18~19장): 리더 신뢰·집단 평판·최근 원인·엔딩 기록 ----------
   function buildTies() {
     const F = LS.Factions;
@@ -577,7 +621,7 @@ LS.Panel = (function () {
     return html;
   }
 
-  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp, repair: buildRepair, siege: buildSiege, person: buildPerson, ties: buildTies };
+  const builders = { crew: buildCrew, spot: buildSpot, area: buildArea, route: buildRoute, bus: buildBus, meal: buildMeal, camp: buildCamp, repair: buildRepair, siege: buildSiege, person: buildPerson, ties: buildTies, requests: buildRequests };
 
   function render() {
     const box = $('panel');
@@ -630,6 +674,13 @@ LS.Panel = (function () {
       if (act === 'trade' || act === 'donate' || act === 'news') {
         const id = state.locationId;
         const res = act === 'trade' ? LS.Factions.trade(state, id, b.dataset.id) : act === 'donate' ? LS.Factions.donate(state, id) : LS.Factions.news(state, id);
+        LS.UI.toast(res.error || res.text);
+        LS.UI.renderAll();
+        return;
+      }
+      if (act === 'reqpay' || act === 'reqext' || act === 'reqgive') {
+        const Q = LS.Requests;
+        const res = act === 'reqpay' ? Q.pay(state, b.dataset.id) : act === 'reqext' ? Q.extend(state, b.dataset.id) : Q.giveUp(state, b.dataset.id);
         LS.UI.toast(res.error || res.text);
         LS.UI.renderAll();
         return;

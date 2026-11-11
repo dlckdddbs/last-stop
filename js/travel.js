@@ -282,6 +282,7 @@ LS.Travel = (function () {
     }
     LS.People.onStop(state, out);   // 임시 동행 목적지, 합류 조건 하차, 이 장소의 생존자
     if (LS.Factions && LS.Factions.onArrive) LS.Factions.onArrive(state, out);   // 대피소·바리케이드 등 장소 사건 (5단계)
+    if (LS.Requests) LS.Requests.onArrive(state, out);   // 약속 재회·부탁 제안·급한 용무 (5단계 3차)
     return out;
   }
 
