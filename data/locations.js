@@ -179,7 +179,7 @@ LS.LOCATIONS = {
   },
   // 다음 지역 입구 (이후 단계에서 열린다)
   airport_road: {
-    name: '공항 고속도로 입구', region: 'airport', bg: 'street', map: { x: 160, y: 450 }, alt: { downtown: { x: 1500, y: 460 } },
+    name: '공항 고속도로 입구', region: 'airport', bg: 'street', map: { x: 160, y: 450 }, alt: { downtown: { x: 1400, y: 460 } },
     exit: true,
     spots: []
   },

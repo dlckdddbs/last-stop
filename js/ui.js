@@ -324,6 +324,7 @@ LS.UI = (function () {
 
   // ---------- 동료 목록 ----------
   function renderCrew() {
+    $('crew-list').classList.toggle('compact', state.crew.length > 4);   // 5명부터는 카드를 줄인다
     const selected = LS.Panel.selectedCrew();
     $('crew-list').innerHTML = state.crew.map((m) => {
       const c = LS.CHARACTERS[m.id];

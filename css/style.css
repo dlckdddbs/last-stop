@@ -376,11 +376,11 @@ button.active { background: #2b2418; border-color: var(--accent); color: var(--a
   background: var(--panel);
   border-top: 1px solid var(--line);
 }
-#crew-list { display: flex; gap: 10px; flex: 1; overflow-x: auto; }
+#crew-list { display: flex; gap: 10px; flex: 1; min-width: 0; overflow-x: auto; }   /* min-width:0: 동료가 많아도 화면 밖으로 밀어내지 않고 이 안에서 줄어들거나 넘긴다 */
 .crew-card {
   position: relative;
   display: flex; gap: 10px; align-items: center;
-  width: 230px; flex: none;
+  flex: 1 1 0; min-width: 158px; max-width: 230px;   /* 동료가 많으면 카드가 줄어든다 (6~8명) */
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
   padding: 8px 10px; cursor: pointer; text-align: left;
 }
@@ -599,3 +599,10 @@ button.crew-trust:hover { border-color: rgba(255,255,255,.2); }
 .act.req.urgent { border-color: #c96a4a; }
 .act.req.urgent .act-head span { color: #f0a080; }
 .act.req.promise .act-head span { color: #a8c8f0; }
+
+/* 동료 5명 이상: 카드를 줄인 모양 (6~8명이 한 줄에 들어가게) */
+#crew-list.compact .crew-card { padding: 6px 8px; gap: 7px; }
+#crew-list.compact .crew-card img { width: 36px; height: 36px; }
+#crew-list.compact .crew-badge { font-size: 0; width: 10px; height: 10px; min-width: 0; padding: 0; right: 6px; top: 6px; border-radius: 50%; }
+#crew-list.compact .crew-bars { grid-template-columns: 26px 1fr; gap: 2px 4px; }
+#crew-list.compact .deficit { display: none; }
