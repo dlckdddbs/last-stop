@@ -39,6 +39,7 @@ LS.ASSETS = {
     nam_gyuhyun: 'images/portraits/nam_gyuhyun.svg',
     go_eunyoung: 'images/portraits/go_eunyoung.svg',
     ma_deoksu: 'images/portraits/ma_deoksu.svg',
+    ha_junki: 'images/portraits/ha_junki.svg',
     radio: 'images/portraits/radio.svg'
   },
   icons: {

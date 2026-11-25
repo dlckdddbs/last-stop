@@ -277,6 +277,22 @@ LS.Panel = (function () {
     return html + '</div>';
   }
 
+  // ---------- 공항 검문소 (25장) ----------
+  function buildCheckpoint(meta) {
+    const F = LS.Factions;
+    const def = F.cpDef(state.locationId);
+    const c = F.cpAt(state);
+    if (!def || !c) return null;
+    let html = `<div class="pn-title">${esc(def.name)}</div><div class="pn-sub">${esc(LS.FACTIONS[def.faction].name)} · ${esc(R().name(def.host))} 중사</div>`;
+    if (c.passed) return html + `<div class="pn-safety ok">통과했다 · 지도에서 공항 대피 접수대로 출발할 수 있다</div>`;
+    if (c.queuedAt != null) html += `<div class="pn-safety ok">줄을 섰다 · ${LS.Clock.fullLabel(c.readyAt)}에 차례 (약 ${hoursLabel(Math.max(0, c.readyAt - state.minute))} 남음)</div><div class="pn-info dim">[기다리기]로 시간을 보내면 차례가 온다. 검문소 앞은 군이 지켜서 무리가 오지 않는다.</div>`;
+    else html += '<div class="pn-info">접수대로 가려면 검문을 거쳐야 한다. 줄을 서거나, 물자를 내거나, 군 연락망과 연이 있어야 한다.</div>';
+    html += `<div class="pn-info dim">접수 마감까지 ${esc(LS.Clock.remainingLabel(state.minute))}</div>`;
+    const ch = F.checkpointChoices(state);
+    html += '<div class="siege-acts">' + ch.map((x, i) => `<button class="act-go" data-act="cpchoice" data-i="${i}" ${x.disabled ? 'disabled' : ''}>${esc(x.label)}<small>${esc(x.desc || '')}</small></button>`).join('') + '</div>';
+    return html;
+  }
+
   // ---------- 통행료 바리케이드 (23장 ⑥) ----------
   function buildBarricade(meta) {
     const F = LS.Factions;
@@ -380,6 +396,7 @@ LS.Panel = (function () {
     if (!meta || !spot || spot.absent) return null;
     if (spot.type === 'refuge') return buildRefuge(meta);
     if (spot.type === 'barricade') return buildBarricade(meta);
+    if (spot.type === 'checkpoint') return buildCheckpoint(meta);
     const T = LS.SPOT_TYPES[spot.type];
     let html = `<div class="pn-title">${esc(meta.label)}</div><div class="pn-sub">${esc(T.name)}</div>`;
     html += runningTasks((t) => t.locId === state.locationId && t.spotId === spotId);
@@ -715,6 +732,13 @@ LS.Panel = (function () {
         const res = act === 'reqpay' ? Q.pay(state, b.dataset.id) : act === 'reqext' ? Q.extend(state, b.dataset.id) : Q.giveUp(state, b.dataset.id);
         LS.UI.toast(res.error || res.text);
         LS.UI.renderAll();
+        return;
+      }
+      if (act === 'cpchoice') {
+        const c = LS.Factions.checkpointChoices(state)[Number(b.dataset.i)];
+        if (!c || c.disabled) return;
+        const r = (c.resolve ? c.resolve(state) : c.result) || {};
+        LS.Time.handle([{ dialog: { title: '공항 검문소', screen: 'outside', logDetail: `선택: ${c.label}`, lines: r.lines && r.lines.length ? r.lines : [{ speaker: 'narration', text: c.label }], choices: [{ label: '알았다' }] } }]);
         return;
       }
       if (act === 'barchoice') {

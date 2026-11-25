@@ -107,6 +107,12 @@ LS.UI = (function () {
       const rf = LS.Factions.refugeAt(state.locationId);
       return rf ? `${LS.FACTIONS[rf.faction].name} · ${LS.Factions.stanceOf(state, rf.faction).label}` : '';
     }
+    if (spot.type === 'checkpoint') {
+      const c = LS.Factions.cpAt(state);
+      if (!c) return '';
+      if (c.passed) return '통과했다';
+      return c.queuedAt != null ? `차례까지 ${R().hoursLabel(Math.max(0, c.readyAt - state.minute))}` : '검문을 받아야 지나간다';
+    }
     if (spot.type === 'barricade') {
       const b = LS.Factions.barAt(state);
       if (!b) return '';
@@ -148,7 +154,7 @@ LS.UI = (function () {
       const spot = place.spots[sp.id];
       const T = LS.SPOT_TYPES[sp.type];
       const work = state.tasks.filter((t) => t.locId === state.locationId && t.spotId === sp.id);
-      html += `<button class="spot ${work.length ? 'busy' : ''} ${sp.type === 'shelter' ? 'shelter' : ''} ${sp.type === 'refuge' ? 'refuge' : ''} ${sp.type === 'barricade' ? 'barricade' : ''}" data-spot="${sp.id}" style="left:${sp.x}%;top:${sp.y}%">` +
+      html += `<button class="spot ${work.length ? 'busy' : ''} ${sp.type === 'shelter' ? 'shelter' : ''} ${sp.type === 'refuge' ? 'refuge' : ''} ${sp.type === 'barricade' ? 'barricade' : ''} ${sp.type === 'checkpoint' ? 'barricade' : ''}" data-spot="${sp.id}" style="left:${sp.x}%;top:${sp.y}%">` +
         `<b>${esc(sp.label)}</b><small>${esc(T.name)} · ${esc(spotShort(spot))}</small>` +
         work.map((t) => `<span class="spot-work">${esc(t.members.map((id) => R().name(id)).join('·'))} · ${esc(LS.Tasks.labelFor(state, R().member(state, t.members[0])))}</span>`).join('') +
         '</button>';

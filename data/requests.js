@@ -96,7 +96,7 @@ Object.assign(LS.REQUESTS, {
   yoo_visit: {
     from: 'yoo_sangcheol', kind: 'normal', offer: 'join', title: '공항 앞 교환 거점 방문', days: null,
     where: '공항 지역의 공항 앞 교환소에 들른다',
-    airport: true,
+    visit: 'ap_market',
     reward: { rep: 3 },
     rewardText: '공항 앞 교환소에 들르면 완료 · 상인 무리 평판 +3',
     ask: [{ speaker: 'yoo_sangcheol', text: '공항 들어가기 전에 교환 거점에 꼭 한 번 들러야 하오. 넘길 물건이 있어서.' }]

@@ -206,3 +206,27 @@ Object.defineProperty(LS.EVENTS, 'radio_d14', {
   get() { return LS.Requests.radioD14(LS.game); }
 });
 LS.SCHEDULE.push({ at: 13 * 1440 + 8 * 60, event: 'radio_d14' });
+
+// 21일째 마지막 대피편 확정 · 28일째 마지막 방송 (21장). 2026-11-25
+LS.EVENTS.radio_d21 = {
+  title: '마지막 대피편 확정', screen: 'bus',
+  lines: [
+    { speaker: 'narration', text: '21일째 아침. 라디오 소리가 평소보다 또렷하다.' },
+    { speaker: 'radio', text: '공항 임시 대피본부입니다. 마지막 대피편이 확정되었습니다. 접수는 30일째 24시에 마감합니다.' },
+    { speaker: 'radio', text: '공항 검문소는 군 연락망이 맡습니다. 검문에는 하루가 걸립니다. 연료와 식량을 내거나, 군과 연이 있는 분은 바로 통과할 수 있습니다.' },
+    { speaker: 'park_seoyun', text: '이제 정말 9일 남았어요.' }
+  ],
+  observations: ['마감: 30일째 24시 · 공항 대피 접수대', '검문소: 24시간 대기 / 연료 2·식량 10 / 군 연락망 평판 호의(+2) 이상이면 바로 통과', '21일째부터 공항 지역의 무리가 더 자주 온다'],
+  choices: [{ label: '지도를 확인한다', result: { log: '마지막 대피편 확정 방송을 들었다', goto: 'map' } }]
+};
+LS.EVENTS.radio_d28 = {
+  title: '마지막 방송', screen: 'bus',
+  lines: [
+    { speaker: 'narration', text: '28일째 아침. 잡음 사이로 목소리가 들린다.' },
+    { speaker: 'radio', text: '이것이 마지막 정규 방송입니다. 접수는 사흘 뒤 자정에 닫힙니다. 아직 길 위에 있는 모든 차량에게, 서두르십시오.' },
+    { speaker: 'radio', text: '…그리고 지금까지 누군가를 태워 준 분들께, 고맙습니다.' }
+  ],
+  observations: ['접수 마감까지 3일 (30일째 24시)'],
+  choices: [{ label: '라디오를 끈다' }]
+};
+LS.SCHEDULE.push({ at: 20 * 1440 + 8 * 60, event: 'radio_d21' }, { at: 27 * 1440 + 8 * 60, event: 'radio_d28' });

@@ -144,3 +144,31 @@ Object.assign(LS.REFUGES, {
     ]
   }
 });
+
+// ---------- 공항 지역 (2026-11-25) ----------
+LS.REFUGES.ap_market = {
+  faction: 'merchant', name: '공항 앞 교환소', host: 'ma_deoksu', spot: 'am_base',
+  desc: '상인 무리가 공항 앞 렌터카 주차장에 차린 마지막 교환소. 도심에서 본 마덕수가 먼저 와 있다.',
+  lodgeFood: 8,
+  trades: [
+    { id: 'apm_fuel_food', give: { fuel: 2 }, want: { food: 10 }, text: '항공유를 걸러 만든 연료' },
+    { id: 'apm_food_parts', give: { food: 10 }, want: { parts: 3 }, fresh: 0.2, text: '호텔 창고 통조림' },
+    { id: 'apm_meds_food', give: { meds: 1 }, want: { food: 8 }, text: '공항 의무실에서 나온 약' }
+  ],
+  donate: { food: 6 },
+  handover: [],
+  welcome: [
+    { speaker: 'ma_deoksu', text: '또 보는군. 검문소 앞에서 줄 서는 놈들 상대로 장사하는 중이오.' },
+    { speaker: 'ma_deoksu', text: '검문소는 군 연락망이 지키오. 줄을 서든, 연료랑 식량을 내든, 아는 사람이 있든 해야 지나가지.' }
+  ]
+};
+
+// 공항 검문소 (25장 "일반 검문 대기 24시간 / 물자 연료 2+식량 10 대안 / 평판 즉시 통과")
+LS.CHECKPOINTS = {
+  ap_checkpoint: {
+    name: '공항 검문소', faction: 'military', host: 'ha_junki', to: 'ap_terminal',
+    waitMin: 24 * 60,
+    pay: { fuel: 2, food: 10 },
+    passRep: 2            // 군 연락망 평판이 호의(+2) 이상이면 바로 통과 [임시: 기획서 '평판 즉시 통과'의 기준을 호의로]
+  }
+};

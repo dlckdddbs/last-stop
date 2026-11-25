@@ -177,10 +177,39 @@ LS.LOCATIONS = {
       { id: 'dw_shelter', label: '관리동 숙직실', type: 'shelter', x: 56, y: 22 }
     ]
   },
-  // 다음 지역 입구 (이후 단계에서 열린다)
+  // ---------- 공항 지역 (2026-11-25, 기말: 공항에서 끝나는 한 판) ----------
+  // 공항은 무리가 크다 (40%, 21일째부터 45%, 중·대규모). 검문소를 지나야 접수대에 갈 수 있다
   airport_road: {
     name: '공항 고속도로 입구', region: 'airport', bg: 'street', map: { x: 160, y: 450 }, alt: { downtown: { x: 1400, y: 460 } },
-    exit: true,
+    spots: [
+      { id: 'ar_cars', label: '고속도로 정체 차량', type: 'roadside_car', x: 16, y: 64 },
+      { id: 'ar_rest', label: '휴게소 편의점', type: 'convenience', x: 32, y: 40 },
+      { id: 'ar_shelter', label: '휴게소 숙직실', type: 'shelter', x: 52, y: 26 }
+    ]
+  },
+  ap_market: {
+    name: '공항 앞 교환소', region: 'airport', bg: 'street', map: { x: 540, y: 270 },
+    spots: [
+      { id: 'am_base', label: '렌터카 주차장 교환소', type: 'refuge', x: 40, y: 28 },
+      { id: 'am_hotel', label: '공항 호텔 주방', type: 'mart', x: 20, y: 44 }
+    ]
+  },
+  ap_cargo: {
+    name: '화물 터미널', region: 'airport', bg: 'street', map: { x: 560, y: 690 },
+    spots: [
+      { id: 'ac_fuel', label: '항공 급유 차량', type: 'gas_station', x: 22, y: 46 },
+      { id: 'ac_shed', label: '정비 창고', type: 'junkyard', x: 46, y: 38 },
+      { id: 'ac_shelter', label: '화물 사무실', type: 'shelter', x: 58, y: 22 }
+    ]
+  },
+  ap_checkpoint: {
+    name: '공항 검문소', region: 'airport', bg: 'street', map: { x: 960, y: 460 },
+    spots: [
+      { id: 'ap_gate', label: '군 검문소', type: 'checkpoint', x: 44, y: 30 }
+    ]
+  },
+  ap_terminal: {
+    name: '공항 대피 접수대', region: 'airport', bg: 'street', map: { x: 1360, y: 460 }, terminal: true,
     spots: []
   },
   military_gate: {
@@ -227,5 +256,11 @@ LS.ROUTES = [
   { a: 'dt_market', b: 'dt_tower', hours: 4, road: '큰길' },
   { a: 'dt_clinic', b: 'dt_tower', hours: 5, road: '큰길' },
   { a: 'dt_mall', b: 'airport_road', hours: 4, road: '큰길' },
-  { a: 'dt_tower', b: 'airport_road', hours: 4, road: '큰길' }
+  { a: 'dt_tower', b: 'airport_road', hours: 4, road: '큰길' },
+  // 공항 지역 (시간은 임시값: 고속도로 입구 → 접수대 최단 7시간 + 검문)
+  { a: 'airport_road', b: 'ap_market', hours: 3, road: '큰길' },
+  { a: 'airport_road', b: 'ap_cargo', hours: 3, road: '큰길' },
+  { a: 'ap_market', b: 'ap_checkpoint', hours: 3, road: '큰길' },
+  { a: 'ap_cargo', b: 'ap_checkpoint', hours: 4, road: '큰길' },
+  { a: 'ap_checkpoint', b: 'ap_terminal', hours: 1, road: '검문 통과로', safe: true }   // 군이 지키는 길: 도로 사건 없음
 ];

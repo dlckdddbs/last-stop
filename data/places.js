@@ -52,7 +52,9 @@ LS.SPOT_TYPES = {
   // 5단계 2차: 다른 집단이 관리하는 대피소 (숙박·교환·인계·소식, data/factions.js REFUGES)
   refuge: { name: '대피소' },
   // 통행료 바리케이드 (23장 ⑥)
-  barricade: { name: '통행료 바리케이드' }
+  barricade: { name: '통행료 바리케이드' },
+  // 공항 검문소 (군 연락망). 지나야 접수대로 갈 수 있다
+  checkpoint: { name: '검문소' }
 };
 
 LS.LOOT_NAMES = {

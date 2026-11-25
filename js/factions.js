@@ -20,6 +20,8 @@ LS.Factions = (function () {
     Object.keys(LS.BARRICADES).forEach((id) => {
       state.barricades[id] = { owner: R().pick(LS.BARRICADES[id].owners), resolved: null, clues: [], from: null, met: false, discount: 1, talkTried: false, offer: null };
     });
+    state.checkpoints = {};
+    Object.keys(LS.CHECKPOINTS || {}).forEach((id) => { state.checkpoints[id] = { met: false, queuedAt: null, readyAt: null, passed: false, how: null }; });
   }
 
   // ---------- 평판 ----------
@@ -134,7 +136,9 @@ LS.Factions = (function () {
 
   // 대피소에 묵는 동안에는 이 정차에 무리가 오지 않는다 [해석: 담장 안에 버스를 세운다]
   function safeStop(state) {
-    if (state.travel || !refugeAt(state.locationId)) return false;
+    if (state.travel) return false;
+    if (LS.CHECKPOINTS && LS.CHECKPOINTS[state.locationId]) return true;   // 검문소 앞은 군이 지킨다 [해석]
+    if (!refugeAt(state.locationId)) return false;
     return state.tasks.some((t) => t.type === 'lodge' && t.locId === state.locationId);
   }
 
@@ -343,9 +347,94 @@ LS.Factions = (function () {
 
   // 출발 막기: 바리케이드를 풀지 않았으면 온 길로만 돌아갈 수 있다
   function blockReason(state, toId) {
+    const cb = checkpointBlock(state, toId);
+    if (cb) return cb;
     const b = barAt(state);
     if (!b || b.resolved || toId === b.from) return '';
     return '바리케이드가 길을 막고 있다. 통행료·협상·돌파·우회 중 하나를 골라야 지나갈 수 있다 (온 길로 돌아가는 건 된다)';
+  }
+
+  // ---------- 공항 검문소 (25장: 대기 24시간 / 연료 2+식량 10 / 평판 즉시 통과) ----------
+  function cpAt(state, id) { return state.checkpoints && state.checkpoints[id || state.locationId] || null; }
+  function cpDef(id) { return LS.CHECKPOINTS && LS.CHECKPOINTS[id] || null; }
+
+  function checkpointBlock(state, toId) {
+    const def = cpDef(state.locationId);
+    const c = cpAt(state);
+    if (!def || !c || c.passed || toId !== def.to) return '';
+    if (c.queuedAt != null) return `검문을 기다리는 중이다 (약 ${R().hoursLabel(Math.max(0, c.readyAt - state.minute))} 남음)`;
+    return '검문소를 통과해야 접수대로 갈 수 있다. 검문소를 눌러 줄을 서거나 물자를 낸다';
+  }
+
+  function passCheckpoint(state, c, how, text) {
+    c.passed = true;
+    c.how = how;
+    LS.State.addLog(state, '공항 검문 통과', true, 'event', text);
+  }
+
+  function checkpointChoices(state) {
+    const id = state.locationId;
+    const def = cpDef(id);
+    const c = cpAt(state);
+    if (!def || !c || c.passed) return [];
+    const list = [];
+    const repOk = rep(state, def.faction) >= def.passRep;
+    list.push({
+      label: '군 연락망과의 연으로 바로 지나간다',
+      desc: repOk ? `${LS.FACTIONS[def.faction].name} 평판 ${signed(rep(state, def.faction))}` : `${LS.FACTIONS[def.faction].name} 평판이 호의(+${def.passRep}) 이상이어야 한다 (지금 ${signed(rep(state, def.faction))})`,
+      disabled: !repOk,
+      resolve: (s) => { passCheckpoint(s, cpAt(s, id), 'rep', '군 연락망과의 연으로 바로 통과'); return { lines: [{ speaker: def.host, text: '연락망에서 이야기 들었소. 통과시키겠소.' }] }; }
+    });
+    list.push({
+      label: `물자를 내고 지나간다 (${costText(def.pay)})`,
+      desc: canPay(state, def.pay) ? '바로 통과' : '물자가 모자라다',
+      disabled: !canPay(state, def.pay),
+      resolve: (s) => { pay(s, def.pay); passCheckpoint(s, cpAt(s, id), 'pay', `${costText(def.pay)}을 내고 통과`); return { lines: [{ speaker: def.host, text: '접수대 쪽 발전기에 쓰겠소. 지나가시오.' }] }; }
+    });
+    if (c.queuedAt == null) {
+      list.push({
+        label: `줄을 서서 기다린다 (${R().hoursLabel(def.waitMin)})`,
+        desc: '검문소 앞은 군이 지켜서 무리가 오지 않는다 · [기다리기]로 시간을 보낸다',
+        resolve: (s) => {
+          const cc = cpAt(s, id);
+          cc.queuedAt = s.minute;
+          cc.readyAt = s.minute + def.waitMin;
+          LS.State.addLog(s, '공항 검문 대기 시작', true, 'event', `${LS.Clock.fullLabel(cc.readyAt)}에 차례가 온다`);
+          return { lines: [{ speaker: def.host, text: `번호표요. ${LS.Clock.fullLabel(cc.readyAt)}쯤 부르겠소.` }] };
+        }
+      });
+    }
+    return list;
+  }
+
+  // 줄을 서 둔 차례가 오면 저절로 통과 (Sim이 부른다)
+  function advance(state, prev, next) {
+    const out = [];
+    Object.keys(state.checkpoints || {}).forEach((id) => {
+      const c = state.checkpoints[id];
+      if (c.passed || c.queuedAt == null || next < c.readyAt) return;
+      passCheckpoint(state, c, 'wait', '줄을 서서 차례를 기다렸다');
+      out.push({ stop: true, important: true, toast: `${cpDef(id).name}: 차례가 왔다. 이제 접수대로 갈 수 있다.` });
+    });
+    return out;
+  }
+
+  function checkpointEvent(state) {
+    const def = cpDef(state.locationId);
+    return {
+      title: def.name, screen: 'outside',
+      lines: [
+        { speaker: 'narration', text: '모래주머니와 철조망 너머로 공항 청사가 보인다. 검문소 앞에 차들이 줄지어 서 있다.' },
+        { speaker: def.host, text: '군 연락망 하준기 중사요. 접수대로 가려면 여기서 검문을 받아야 하오.' }
+      ],
+      observations: [
+        `줄을 서면 ${R().hoursLabel(def.waitMin)} 걸린다 (검문소 앞은 군이 지켜서 무리가 오지 않는다)`,
+        `${costText(def.pay)}을 내면 바로 통과`,
+        `${LS.FACTIONS[def.faction].name} 평판이 호의(+${def.passRep}) 이상이면 바로 통과 · 지금 ${signed(rep(state, def.faction))}`,
+        `접수 마감: 30일째 24시 · 남은 시간 ${LS.Clock.remainingLabel(state.minute)}`
+      ],
+      choices: checkpointChoices(state).concat([{ label: '나중에 정한다', desc: '정차 외부의 검문소를 눌러 정한다', result: { lines: [{ speaker: 'narration', text: '버스를 줄 옆에 세웠다.' }] } }])
+    };
   }
 
   // 우회를 골랐으면 바리케이드를 지나는 구간에 시간이 더 든다
@@ -511,6 +600,11 @@ LS.Factions = (function () {
       if (!b.resolved && !b.met) { b.met = true; out.push({ dialog: barricadeEvent(state) }); }
       else if (!b.resolved) out.push({ toast: '바리케이드가 아직 길을 막고 있다.' });
     }
+    const c = cpAt(state);
+    if (c && cpDef(id)) {
+      if (!c.met) { c.met = true; out.push({ dialog: checkpointEvent(state) }); }
+      else if (!c.passed) out.push({ toast: c.queuedAt != null ? `검문 차례까지 약 ${R().hoursLabel(Math.max(0, c.readyAt - state.minute))}` : '검문소를 지나야 접수대로 갈 수 있다.' });
+    }
   }
 
   function welcomeEvent(state, id) {
@@ -555,6 +649,7 @@ LS.Factions = (function () {
     helpedCount, addRecord, costText, canPay,
     refugeAt, rstate, entry, lodgeCost, startLodge, lodgeBlock, safeStop, trade, tradeCost, helpBlock, donate, newsCost, news,
     unitOf, dropKind, dropText, dropOff, dropEvent, consents,
-    barAt, ownerOf, tollOf, blockReason, extraMinutes, barricadeChoices, onScouted, onHelpDone, onArrive, hostileOwner
+    barAt, ownerOf, tollOf, blockReason, extraMinutes, barricadeChoices, onScouted, onHelpDone, onArrive, hostileOwner,
+    cpAt, cpDef, checkpointChoices, advance
   };
 })();

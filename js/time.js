@@ -56,7 +56,7 @@ LS.Time = (function () {
     const out = LS.Sim.advance(state, prev, next);
     const due = scheduledFrom(0);
     if (due && due.at <= state.minute) { state.fired[due.event] = true; out.unshift({ dialog: due.event }); }
-    if (state.minute >= LS.Clock.end() && !state.gameOver) out.push({ gameover: 'deadline' });
+    if (state.minute >= LS.Clock.end() && !state.gameOver && state.flags.arrivedAirport == null) out.push({ gameover: 'deadline' });   // 마감과 같은 시각의 도착은 성공 (02장)
     LS.UI.renderLive();
     const go = handle(out);
     // 계속 흐르는 중에도 3시간마다 저장한다 (사건이 없을 때만)
@@ -143,6 +143,7 @@ LS.Time = (function () {
 
   const ENDINGS = {
     deadline: { title: '접수 마감', text: '30일째 24시가 지났다.' },
+    arrived: { title: '공항 도착', text: '마감 전에 공항 대피 접수를 마쳤다.' },
     protagonist: { title: '빈 운전석', text: '윤재하가 숨졌다.' },
     heroTurned: { title: '빈 운전석', text: '감염 72시간. 윤재하는 돌아오지 못했다.' },
     selfExit: { title: '마지막 정류장', text: '윤재하는 스스로 버스에서 내렸다. 남은 일행이 이어서 간다.' },

@@ -48,6 +48,7 @@ LS.Sim = (function () {
 
     // 부탁 기한·리더 약속·작은 순간 (20~21장)
     out.push(...LS.Requests.advance(state, prev, next));
+    out.push(...LS.Factions.advance(state, prev, next));   // 공항 검문 차례
 
     // 식중독 회복
     state.crew.forEach((m) => {

@@ -127,6 +127,8 @@ LS.World = (function () {
 
   function eventChance(state, key) {
     const info = state.routes[key];
+    const rt = LS.ROUTES.find((r) => routeKey(r.a, r.b) === key);
+    if (rt && rt.safe) return 0;   // 군이 지키는 길 (검문소 → 접수대)
     return info && (info.known || info.traveled) ? LS.CONFIG.road.knownChance : LS.CONFIG.road.unknownChance;
   }
 

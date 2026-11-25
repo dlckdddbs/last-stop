@@ -299,6 +299,11 @@ LS.Requests = (function () {
     const loc = state.locationId;
     // 리더 약속: 그 장소에 돌아왔다
     active(state, 'promise').filter((r) => r.at === loc).forEach((r) => out.push({ dialog: reunionEvent(state, r) }));
+    // 공항에서 끝나는 부탁: 송지호의 명단(접수대), 유상철의 교환소 방문
+    active(state).forEach((r) => {
+      const t = tpl(r.tid);
+      if (t && ((t.airport && LS.LOCATIONS[loc].terminal) || (t.visit && t.visit === loc))) out.push(...complete(state, r, []).out);
+    });
     // 급한 용무: 목표에 왔으면 '노력했다'로 친다
     active(state).forEach((r) => { if ((r.target || []).includes(loc)) r.tried = true; });
     // 이곳에서 할 수 있는 부탁 알림

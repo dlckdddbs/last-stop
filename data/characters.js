@@ -205,3 +205,6 @@ LS.SPEAKERS = {
   radio: { name: '라디오', portrait: 'radio' },
   barricade: { name: '바리케이드의 사람', portrait: null }
 };
+
+// 공항 검문소 (2026-11-25): 군 연락망 대표. 합류하지 않는다
+LS.CHARACTERS.ha_junki = { name: '하준기', role: '군 연락망 · 공항 검문소 중사', host: true, canDrive: false, faction: 'military', traits: ['합류하지 않는다'] };
