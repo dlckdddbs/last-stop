@@ -490,9 +490,14 @@ LS.Requests = (function () {
     };
   }
 
+  // 이어하기: 저장된 부탁 번호 다음부터 새 번호를 준다
+  function syncSeq(state) {
+    state.requests.list.forEach((r) => { const n = parseInt(String(r.id).split('#')[1], 10); if (n >= seq) seq = n + 1; });
+  }
+
   return {
     setup, tpl, active, get, room, offerEvent, accept, errandBlock, workMinutes, workLabel, onErrandStart, onErrandDone,
     payBlock, pay, onDelivered, complete, canContact, extendBlock, extend, giveUp, promise, onArrive, advance,
-    radioD14, whereText, rewardText, left, locName
+    radioD14, whereText, rewardText, left, locName, syncSeq
   };
 })();

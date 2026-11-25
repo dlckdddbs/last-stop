@@ -22,6 +22,16 @@
       </div>
       <div id="tb-resources" class="tb-resources"></div>
       <div id="tb-bus" class="tb-bus"></div>
+      <!-- 메뉴: 자동 저장 표시 · 처음부터 -->
+      <div class="tb-menu">
+        <button id="btn-menu" title="저장·처음부터">메뉴</button>
+        <div id="game-menu" class="hidden">
+          <div id="save-badge" class="save-badge"></div>
+          <div class="menu-note">멈춰 있을 때마다 자동으로 저장돼요. 새로고침하거나 다시 열면 [이어하기]로 돌아와요.</div>
+          <button id="btn-title">시작 화면으로</button>
+          <button id="btn-restart" class="danger-btn">처음부터 다시</button>
+        </div>
+      </div>
     </header>
 
     <!-- 가운데: 화면 전환 탭 + 장면 + 기록 -->
@@ -95,6 +105,16 @@
     </footer>
   </div>
 
+  <!-- 시작 화면: 이어하기 / 새 게임 (2026-11-25, 기말 피드백) -->
+  <div id="title" class="hidden">
+    <div class="title-box">
+      <div class="title-eyebrow">30일 안에 공항에 도착하는 버스 생존 운영</div>
+      <h1>마지막 정류장</h1>
+      <div id="title-buttons" class="title-buttons"></div>
+      <div id="title-note" class="title-note"></div>
+    </div>
+  </div>
+
   <!-- 데이터 -->
   <script src="data/config.js"></script>
   <script src="data/assets.js"></script>
@@ -123,6 +143,7 @@
   <script src="js/dialog.js"></script>
   <script src="js/time.js"></script>
   <script src="js/guide.js"></script>
+  <script src="js/save.js"></script>
   <script src="js/main.js"></script>
   <script src="js/dev.js"></script>
 </body>

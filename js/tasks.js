@@ -785,8 +785,13 @@ LS.Tasks = (function () {
     return false;
   }
 
+  // 이어하기: 저장된 작업 번호 다음부터 새 번호를 준다 (같은 번호가 겹치지 않게)
+  function syncSeq(state) {
+    state.tasks.forEach((t) => { const n = parseInt(String(t.id).slice(1), 10); if (n >= seq) seq = n + 1; });
+  }
+
   return {
     DEF, def, validate, preview, start, advance, complete, abort, eta, labelFor, tagFor, find, taskTitle, members,
-    nextMilestone, wouldEmptyBus, isOutside, hasWork, campSafety, beginStep, checkerOf, watchers
+    nextMilestone, wouldEmptyBus, isOutside, hasWork, campSafety, beginStep, checkerOf, watchers, syncSeq
   };
 })();

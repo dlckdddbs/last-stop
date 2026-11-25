@@ -58,7 +58,10 @@ LS.Time = (function () {
     if (due && due.at <= state.minute) { state.fired[due.event] = true; out.unshift({ dialog: due.event }); }
     if (state.minute >= LS.Clock.end() && !state.gameOver) out.push({ gameover: 'deadline' });
     LS.UI.renderLive();
-    return handle(out);
+    const go = handle(out);
+    // 계속 흐르는 중에도 3시간마다 저장한다 (사건이 없을 때만)
+    if (go && Math.floor(next / 180) > Math.floor(prev / 180) && LS.Save.settled(state)) LS.Save.write(state);
+    return go;
   }
 
   // 한 걸음 진행. 계속 진행해도 되면 true
@@ -102,6 +105,7 @@ LS.Time = (function () {
     goalAt = null;
     state.running = false;
     LS.UI.renderControls();
+    LS.Save.autosave(state);   // 멈춘 순간 저장 (사건이 남아 있으면 Save가 건너뛴다)
   }
 
   function run(kind, msPerStep, goal) {
@@ -149,6 +153,7 @@ LS.Time = (function () {
     if (state.gameOver) return;
     state.gameOver = true;
     stop();
+    LS.Save.clear();   // 끝난 여정은 이어하지 않는다 (처음부터 → 새 게임)
     const e = ENDINGS[reason] || ENDINGS.deadline;
     LS.State.addLog(state, e.title, true, 'event', e.text);
     const g = document.getElementById('gameover');
@@ -160,5 +165,5 @@ LS.Time = (function () {
 
   function runInfo() { return { mode, goal: goalAt }; }
 
-  return { init, play, pause: stop, runToNext, waitUntil, cycleSpeed, nextStop, fireDue, handle, busy, runInfo };
+  return { init, play, pause: stop, runToNext, waitUntil, cycleSpeed, nextStop, fireDue, handle, busy, runInfo, queueEmpty: () => queue.length === 0 };
 })();

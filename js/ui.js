@@ -399,6 +399,7 @@ LS.UI = (function () {
     LS.Panel.render();
     renderLog();
     renderControls();
+    LS.Save.autosave(state);   // 행동할 때마다 자동 저장 (사건 중에는 건너뛴다)
   }
 
   function renderLive() {
@@ -476,5 +477,11 @@ LS.UI = (function () {
 
   function init(s) { state = s; bind(); }
 
-  return { init, renderAll, renderLive, renderTopbar, renderTabs, renderScene, renderCrew, renderLog, renderControls, setScreen, toast, esc };
+  // 위쪽 메뉴 버튼 옆: 마지막으로 자동 저장한 게임 시각
+  function renderSaveBadge() {
+    const el = $('save-badge');
+    if (el) el.textContent = LS.Save.lastLabel() ? `자동 저장 · ${LS.Save.lastLabel()}` : '';
+  }
+
+  return { init, renderAll, renderLive, renderTopbar, renderTabs, renderScene, renderCrew, renderLog, renderControls, setScreen, toast, esc, renderSaveBadge };
 })();

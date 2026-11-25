@@ -606,3 +606,40 @@ button.crew-trust:hover { border-color: rgba(255,255,255,.2); }
 #crew-list.compact .crew-badge { font-size: 0; width: 10px; height: 10px; min-width: 0; padding: 0; right: 6px; top: 6px; border-radius: 50%; }
 #crew-list.compact .crew-bars { grid-template-columns: 26px 1fr; gap: 2px 4px; }
 #crew-list.compact .deficit { display: none; }
+
+/* ---------- 메뉴 (자동 저장·처음부터) · 2026-11-25 ---------- */
+.tb-menu { position: relative; margin-left: 12px; }
+#btn-menu { font-size: 12px; padding: 4px 10px; }
+#game-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; width: 250px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+#game-menu.hidden { display: none; }
+#game-menu button { text-align: left; font-size: 13px; }
+.save-badge { font-size: 13px; color: var(--accent); font-weight: 700; }
+.menu-note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ---------- 시작 화면 ---------- */
+#title {
+  position: fixed; inset: 0; z-index: 8000;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 30% 40%, #232a33 0%, #101317 70%);
+}
+#title.hidden { display: none; }
+.title-box { width: 560px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 14px; }
+.title-eyebrow { color: var(--accent); font-weight: 700; letter-spacing: 2px; font-size: 14px; }
+.title-box h1 { margin: 0 0 18px; font-size: 64px; line-height: 1.05; color: #ede7db; letter-spacing: -1px; }
+.title-buttons { display: flex; flex-direction: column; gap: 10px; }
+.title-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+  padding: 14px 18px; font-size: 20px; font-weight: 700; border-radius: 10px;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text); cursor: pointer;
+}
+.title-btn small { font-size: 13px; font-weight: 400; color: var(--muted); }
+.title-btn.primary { border-color: var(--accent); background: rgba(226, 165, 60, 0.12); }
+.title-btn:hover { border-color: var(--accent); }
+.title-btn.demo { font-size: 16px; padding: 10px 16px; border-style: dashed; }
+.title-section { margin-top: 10px; font-size: 13px; color: var(--muted); font-weight: 700; }
+.title-note { font-size: 13px; color: var(--muted); line-height: 1.5; }
