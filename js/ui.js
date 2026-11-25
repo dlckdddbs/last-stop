@@ -245,7 +245,7 @@ LS.UI = (function () {
       const known = info.known || info.traveled;
       const closed = !W.routeOpen(state, r);
       svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="edge ${closed ? 'closed' : known ? 'known' : 'unknown'} ${r.hidden ? 'hidden-road' : ''}"/>`;
-      svg += `<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 - 10}" class="edge-label">${closed ? '폐쇄' : r.hours + '시간'}${r.road !== '큰길' && !closed ? ' · ' + esc(r.road) : ''}</text>`;
+      svg += `<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 - 10}" class="edge-label">${closed ? '폐쇄' : R().hoursLabel(r.hours * 60)}${r.road !== '큰길' && !closed ? ' · ' + esc(r.road) : ''}</text>`;
     });
     Object.keys(LS.LOCATIONS).forEach((id) => {
       const loc = LS.LOCATIONS[id];

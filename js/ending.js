@@ -152,7 +152,7 @@ LS.Ending = (function () {
     const j = judge(state, reason);
     const e = ENDINGS[j.id];
     const f = j.f;
-    markSeen(j.id);
+    if (!state.flags.demo) markSeen(j.id);   // 시연용 지름길은 모은 결말에 넣지 않는다
     LS.State.addLog(state, `결말: ${e.title}`, true, 'event', e.scene);
     const axisText = { saved: '구한 쪽', between: '그 사이', letgo: '내려놓은 쪽' }[f.axis];
     const arrivedAt = state.flags.arrivedAirport != null ? LS.Clock.fullLabel(state.flags.arrivedAirport) : null;
@@ -161,6 +161,7 @@ LS.Ending = (function () {
 
     let html = `<div class="ending-box"><div class="ending-kind ${e.kind}">${e.kind === 'success' ? '공항 도착' : e.kind === 'fail' ? '대피편을 놓쳤다' : '특수 결말'}</div>`;
     html += `<h2>${esc(e.title)}</h2><p class="ending-scene">${esc(e.scene)}</p>`;
+    if (state.flags.demo) html += '<div class="rec-demo">시연용 지름길로 시작한 여정이에요 (일반 진행이 아니라 모은 결말에는 넣지 않아요)</div>';
     if (reactions.length) html += '<div class="ending-react">' + reactions.map((r) => `<p>${r.speaker ? `<b>${esc(speakerName(r.speaker))}</b> ` : ''}${esc(r.text)}</p>`).join('') + '</div>';
     if (extras.length) html += '<div class="ending-extra">' + extras.map((t) => `<p>${esc(t)}</p>`).join('') + '</div>';
 
@@ -169,7 +170,7 @@ LS.Ending = (function () {
 
     // 여행 기록 (25장: 도착 시각·태운/맡긴/잃은 사람·약속·평판)
     html += '<div class="rec-grid">';
-    html += section(reason === 'arrived' ? '함께 도착한 사람' : '마지막까지 버스에 있던 사람', `<div class="rec-chips">${state.crew.map((m) => chip(m.id, STARTERS.includes(m.id) ? '처음부터' : '공항까지')).join('') || '<p class="dim">없음</p>'}</div>`);
+    html += section(reason === 'arrived' ? '함께 도착한 사람' : '마지막까지 버스에 있던 사람', `<div class="rec-chips">${state.crew.map((m) => chip(m.id, STARTERS.includes(m.id) ? '처음부터' : reason === 'arrived' ? '공항까지' : '끝까지')).join('') || '<p class="dim">없음</p>'}</div>`);
     const boarded = state.record.boarded || [];
     html += section('태운 사람', boarded.length ? `<div class="rec-chips">${boarded.map((b) => chip(b.id, `${placeName(b.where)}에서`)).join('')}</div>` : '<p class="dim">아무도 태우지 않았다</p>');
     html += section('맡기거나 데려다준 사람', f.helped.length ? `<div class="rec-chips">${f.helped.map((h) => chip(h.id, `${placeName(h.where)} · ${HOW[h.how] || h.how}`)).join('')}</div>` : '<p class="dim">없음</p>');
@@ -244,7 +245,7 @@ LS.Ending = (function () {
     }
     // 맡기거나 데려다준 사람의 소식 (25장 예: 권순자 — 버스가 데려다준 할머니로 마을에서 불림)
     if (reqDone(state, 'kwon_ride')) out.push({ speaker: null, text: '자급 마을에서는 권순자 할머니를 “버스가 데려다준 할머니”라고 부른다.' });
-    const school = (state.record.helped || []).find((h) => h.where === 'res_school');
+    const school = (state.record.helped || []).find((h) => h.where === 'res_school' && LS.CHARACTERS[h.id] && LS.CHARACTERS[h.id].child);   // 학교에 맡긴 아이
     if (school && LS.CHARACTERS[school.id]) out.push({ speaker: null, text: `초등학교 대피소의 벽에는 ${josa(nm(school.id), '이가')} 그린 버스 그림이 붙어 있다.` });
     // 리더 약속: 지켰으면 고마움, 어겼으면 빈자리
     state.requests.list.filter((r) => r.kind === 'promise').forEach((r) => {

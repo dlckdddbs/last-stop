@@ -120,7 +120,11 @@
     }
     if (LS.Demo && t.indexOf('demo:') === 0) {
       const d = LS.Demo.build(t.slice(5));
-      if (d) start(d.state, 'demo', d.note);
+      if (d) {
+        start(d.state, 'demo', d.note);
+        if (d.arrive) LS.Time.handle(LS.Travel.landAt(d.state, d.arrive));   // 그 장소에 막 도착한 장면부터
+        else LS.Time.handle(LS.Travel.landAt(d.state, d.state.locationId));
+      }
     }
   });
 

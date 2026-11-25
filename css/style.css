@@ -673,3 +673,4 @@ button.crew-trust:hover { border-color: rgba(255,255,255,.2); }
 .rec-list b.bad { color: #e07a5f; }
 .ending-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 6px; font-size: 13px; color: var(--muted); }
 .ending-foot button { font-size: 16px; padding: 8px 18px; }
+.rec-demo { font-size: 13px; color: #1b1f24; background: var(--accent); border-radius: 6px; padding: 6px 10px; align-self: flex-start; font-weight: 700; }

@@ -88,7 +88,12 @@ LS.Time = (function () {
   function drain() {
     if (state.dialogOpen || state.gameOver) return;
     const it = queue.shift();
-    if (!it) { LS.UI.renderAll(); LS.Guide.check(); return; }
+    if (!it) {
+      // 대화 선택으로 주인공이 숨지거나 모두 떠났으면 바로 결말 (다음 걸음을 기다리지 않는다)
+      if (state.protagonistDead) { gameOver('protagonist'); return; }
+      if (!state.crew.length) { gameOver('wipe'); return; }
+      LS.UI.renderAll(); LS.Guide.check(); return;
+    }
     LS.Dialog.open(state, it.dialog, () => drain());
   }
 

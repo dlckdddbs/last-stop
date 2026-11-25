@@ -67,6 +67,9 @@ LS.CONFIG = {
   work: { meaningfulBonus: 2, meaningfulDailyMax: 4 },
 
   // 연료·운전 (15장, 03장)
+  // 모든 길의 운전 시간 배율 (2026-11-25): 1이면 지도에 적힌 시간 그대로. 1.25·1.5로 늘리면 기획서 목표(서두르면 19~20일)에 가까워지지만,
+  // 시험에서 연료·식량이 모자라 공항 전에 쓰러지는 일이 잦아 기말 시연에서는 1로 둔다 (결정사항 13장)
+  routeScale: 1,
   fuel: { drivePerHour: 0.1, idlePerHour: 0.02 },
   driver: { minEnergy: 30, minMental: 30, expertTimeFactor: 0.9 },
   lowHpWorkLimit: 15,             // 임시값(기획서 미정): HP 1~15는 치료·휴식만

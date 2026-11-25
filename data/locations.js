@@ -264,3 +264,6 @@ LS.ROUTES = [
   { a: 'ap_cargo', b: 'ap_checkpoint', hours: 4, road: '큰길' },
   { a: 'ap_checkpoint', b: 'ap_terminal', hours: 1, road: '검문 통과로', safe: true }   // 군이 지키는 길: 도로 사건 없음
 ];
+
+// 운전 시간 배율 적용 (data/config.js routeScale). 30분 단위로 반올림
+LS.ROUTES.forEach((r) => { r.hours = Math.max(1, Math.round(r.hours * (LS.CONFIG.routeScale || 1) * 2) / 2); });
