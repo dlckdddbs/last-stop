@@ -34,6 +34,7 @@ LS.State = (function () {
     m.keptSince = state.minute;        // 합류 조건을 지키기 시작한 시각 (위반하면 다시 센다)
     state.crew.push(m);
     // 유상철: 교환품이 식량 보관 칸을 쓴다 (17장 합류 조건)
+    if (state.record && state.record.boarded && !state.record.boarded.some((b) => b.id === id)) state.record.boarded.push({ id, where: state.locationId, minute: state.minute });   // 여행 기록: 태운 사람
     const cap = LS.CHARACTERS[id].foodCapUse || 0;
     if (cap) state.resources.foodCap -= cap;
     addLog(state, `${LS.CHARACTERS[id].name} 합류`, true, 'event', (roleLabel || LS.CHARACTERS[id].role) + (cap ? ` · 식량 보관 한도 -${cap}` : ''));

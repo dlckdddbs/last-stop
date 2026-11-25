@@ -386,7 +386,7 @@ LS.Requests = (function () {
         } });
       } else out.push({ stop: true, important: true, toast: `부탁 실패: ${t.title} · ${why}${n ? ' · ' + n : ''}` });
     });
-    if (!state.travel && !state.dialogOpen) moments(state, out);
+    if (!state.travel && !state.dialogOpen && state.flags.arrivedAirport == null) moments(state, out);   // 공항에 닿은 뒤에는 작은 순간 없음
     return out;
   }
 

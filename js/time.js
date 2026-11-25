@@ -141,26 +141,19 @@ LS.Time = (function () {
     if (mode === 'play') play(); else LS.UI.renderControls();
   }
 
-  const ENDINGS = {
-    deadline: { title: '접수 마감', text: '30일째 24시가 지났다.' },
-    arrived: { title: '공항 도착', text: '마감 전에 공항 대피 접수를 마쳤다.' },
-    protagonist: { title: '빈 운전석', text: '윤재하가 숨졌다.' },
-    heroTurned: { title: '빈 운전석', text: '감염 72시간. 윤재하는 돌아오지 못했다.' },
-    selfExit: { title: '마지막 정류장', text: '윤재하는 스스로 버스에서 내렸다. 남은 일행이 이어서 간다.' },
-    wipe: { title: '멈춘 버스', text: '버스에 남은 사람이 없다.' }
-  };
-
+  // 결말: 판정·마지막 장면·여행 기록은 ending.js (24~25장)
+  // reason: arrived 공항 접수 | deadline 마감 | protagonist·heroTurned 주인공 | selfExit 스스로 내림 | wipe 전멸
   function gameOver(reason) {
     if (state.gameOver) return;
     state.gameOver = true;
     stop();
     LS.Save.clear();   // 끝난 여정은 이어하지 않는다 (처음부터 → 새 게임)
-    const e = ENDINGS[reason] || ENDINGS.deadline;
-    LS.State.addLog(state, e.title, true, 'event', e.text);
     const g = document.getElementById('gameover');
-    g.innerHTML = `<h2>${e.title}</h2><p>${e.text}</p>` +
-      '<button onclick="location.reload()">처음부터</button>';
+    g.innerHTML = LS.Ending.show(state, reason);
     g.classList.remove('hidden');
+    g.scrollTop = 0;
+    const b = document.getElementById('btn-ending-new');
+    if (b) b.addEventListener('click', () => { LS.Save.clear(); sessionStorage.setItem('lastStop.autoNew', '1'); location.reload(); });
     LS.UI.renderAll();
   }
 

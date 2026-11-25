@@ -14,7 +14,7 @@ LS.Factions = (function () {
     state.repWhy = {};
     Object.keys(LS.FACTIONS).forEach((k) => { state.repWhy[k] = []; });
     // 엔딩 판정용 기록 (24장): 도운 사람·내려놓은 선택·소문·배신
-    state.record = { helped: [], letGo: [], rumors: [], betrayals: [] };
+    state.record = { helped: [], letGo: [], rumors: [], betrayals: [], boarded: [] };
     state.refuges = {};
     state.barricades = {};
     Object.keys(LS.BARRICADES).forEach((id) => {

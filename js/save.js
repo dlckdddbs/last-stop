@@ -66,7 +66,7 @@ LS.Save = (function () {
       if (!s[k] || typeof s[k] !== 'object') { s[k] = fresh[k]; return; }
       Object.keys(fresh[k]).forEach((x) => { if (!(x in s[k])) s[k][x] = fresh[k][x]; });
     });
-    ['helped', 'letGo', 'rumors', 'betrayals'].forEach((k) => { if (!s.record[k]) s.record[k] = []; });
+    ['helped', 'letGo', 'rumors', 'betrayals', 'boarded'].forEach((k) => { if (!s.record[k]) s.record[k] = []; });
     Object.keys(fresh.requests).forEach((k) => { if (!(k in s.requests)) s.requests[k] = fresh.requests[k]; });
     s.running = false;
     s.dialogOpen = false;
