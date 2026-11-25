@@ -184,7 +184,7 @@ LS.LOCATIONS = {
     spots: []
   },
   military_gate: {
-    name: '군부대 방향 길', region: 'military', bg: 'street', map: { x: 160, y: 700 }, alt: { residential: { x: 1480, y: 720 } },
+    name: '군부대 방향 (길 막힘)', region: 'military', bg: 'street', map: { x: 160, y: 700 }, alt: { residential: { x: 1480, y: 720 } },
     exit: true,
     spots: []
   }
@@ -214,8 +214,6 @@ LS.ROUTES = [
   { a: 'res_pharm', b: 'res_cross', hours: 3, road: '큰길' },
   { a: 'res_cross', b: 'res_bridge', hours: 3, road: '큰길' },
   { a: 'res_cross', b: 'res_village', hours: 3, road: '큰길' },
-  { a: 'res_cross', b: 'military_gate', hours: 6, road: '큰길' },
-  { a: 'res_village', b: 'military_gate', hours: 5, road: '큰길' },
   { a: 'res_bridge', b: 'downtown_gate', hours: 3, road: '다리', closesDay: 10 },   // D7 예고, D10부터 폐쇄 (05장)
   // 숨은 길: 다리가 닫히면 드러나는 우회로 (05장 예시 '하천 관리도로', 6~10시간 우회)
   { a: 'res_village', b: 'downtown_gate', hours: 9, road: '하천 관리도로', hidden: true },

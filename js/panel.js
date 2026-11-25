@@ -38,7 +38,7 @@ LS.Panel = (function () {
     if (m.task) return '작업 중';
     const d = LS.Tasks.DEF[type];
     const fights = key && key.indexOf('clear:') === 0;   // 잠자리 건물 안의 좀비 처리는 싸울 수 있어야 한다
-    if (m.temp && (!d.isSleep || fights)) return '임시 동행';
+    if (m.temp && (!d.isSleep || fights)) return '동행';
     if (LS.CHARACTERS[m.id].child && (!d.isSleep || fights)) return '아이';
     const inf = R().infectionStage(state, m);
     if (inf === '악화' && !d.isSleep) return '감염 악화';
@@ -185,7 +185,7 @@ LS.Panel = (function () {
     const stage = R().mentalStage(m.mental);
     const cls = stage === '안정' ? '' : stage === '동요' ? 'shaken' : 'broken';
     const inf = m.infectionHidden ? null : R().infectionStage(state, m);   // 숨긴 물림은 발열 전까지 안 보인다
-    const status = inf ? `감염 · ${inf} (전환까지 ${hoursLabel(Math.max(0, LS.CONFIG.infection.turnH * 60 - (state.minute - m.infectedAt)))})${m.isolated ? ' · 격리 좌석' : ''}`
+    const status = inf ? `감염 · ${inf} (전환까지 ${hoursLabel(Math.max(0, R().infectionLeft(state, m)))}${m.pause && state.minute < m.pause.to ? ' · 억제제로 멈춤' : ''})${m.isolated ? ' · 격리 좌석' : ''}`
       : R().isPoisoned(state, m) ? `식중독 (${hoursLabel(m.poisonUntil - state.minute)} 남음)` : m.status;
     return `<div class="det-head"><img src="${LS.ASSETS.portraits[id]}" alt=""><div><div class="det-name">${esc(c.name)}</div><div class="det-role">${esc(c.role)}</div></div></div>` +
       stat('HP', m.hp, 100, 'hp') + stat('기력', m.energy, 100, 'energy') +
@@ -196,9 +196,25 @@ LS.Panel = (function () {
       `<div class="stat"><div class="stat-row"><span>운전</span><span class="v">${R().canDrive(state, m) ? '가능' : (c.canDrive ? '지금은 불가 (' + R().driveBlockReason(state, m) + ')' : '불가')}</span></div></div>` +
       (c.faction ? `<div class="stat"><div class="stat-row"><span>소속</span><span class="v">${esc(LS.FACTIONS[c.faction].name)}</span></div></div>` : '') +
       (m.task ? `<button class="mini" data-act="abort" data-task="${m.task}">이 작업 중단</button>` : '') +
-      `<ul class="det-traits">${c.traits.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` +
+      (c.perks
+        ? (c.perks.length ? '<div class="act-sub">할 수 있는 것</div><ul class="det-traits">' + c.perks.map((t) => `<li>${esc(t)}</li>`).join('') + '</ul>' : '') +
+          (c.costs && c.costs.length ? '<div class="act-sub">조건·제약</div><ul class="det-traits costs">' + c.costs.map((t) => `<li>${esc(t)}</li>`).join('') + '</ul>' : '')
+        : `<ul class="det-traits">${c.traits.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`) +
+      (inf && !m.suppressed && state.resources.suppressant > 0 ? `<button class="mini" data-act="suppress" data-id="${id}">억제제 쓰기 (감염 48시간 멈춤 · ${state.resources.suppressant}개 있음)</button>` : '') +
       (id !== 'yoon_jaeha' && !state.travel && !state.dialogOpen
         ? `<button class="mini drop-btn" data-act="drop" data-id="${id}">내리게 하기</button><div class="pn-info dim">${esc(LS.Factions.dropText(LS.Factions.dropKind(state, id).kind))}</div>` : '');
+  }
+
+  // 사과 (19장): 집단당 한 번, 부품 2개 또는 식량 10인분으로 평판 +1
+  function apologyBlock(faction) {
+    const F = LS.Factions;
+    const done = F.apologized(state, faction);
+    return '<div class="act"><div class="act-head"><b>사과하기</b><span>집단당 한 번 · 평판 +1</span></div>' +
+      (done ? '<div class="pn-info dim">이미 사과했다. 부탁을 들어주면 평판을 더 되돌릴 수 있다.</div>'
+        : '<div class="hours">' +
+          `<button class="mini" data-act="apology" data-f="${faction}" data-k="parts" ${state.resources.parts >= 2 ? '' : 'disabled'}>부품 2개를 건넨다</button>` +
+          `<button class="mini" data-act="apology" data-f="${faction}" data-k="food" ${LS.State.foodTotal(state) >= 10 ? '' : 'disabled'}>식량 10인분을 건넨다</button></div>`) +
+      '</div>';
   }
 
   // ---------- 대피소 (04장·19장): 숙박·교환·작은 도움·소식·사람 맡기기 ----------
@@ -212,7 +228,8 @@ LS.Panel = (function () {
     let html = `<div class="pn-title">${esc(rf.name)}</div><div class="pn-sub">${esc(f.name)} · 대표 ${esc(f.leader)} · ${esc(meta.label)}</div>`;
     html += `<div class="pn-safety ${e.open ? 'ok' : 'bad'}">평판 ${F.signed(F.rep(state, rf.faction))} · ${e.stance.label}${e.why ? ' — ' + esc(e.why) : ''}</div>`;
     html += `<div class="pn-info">${esc(rf.desc)}</div>`;
-    if (!e.open) return html + '<div class="pn-info dim">부탁을 들어주거나 사과(부품 2개 또는 식량 10인분)로 평판을 되돌릴 수 있어요 (다음 업데이트).</div>';
+    if (!e.open) return html + apologyBlock(rf.faction);
+    if (F.rep(state, rf.faction) < 0) html += apologyBlock(rf.faction);
     html += runningTasks((t) => t.locId === id && (t.type === 'lodge' || t.type === 'helpout'));
     // 숙박
     const lc = F.lodgeCost(state, id);
@@ -295,7 +312,7 @@ LS.Panel = (function () {
     const nU = act.filter((r) => r.kind === 'urgent').length;
     let html = `<div class="pn-title">부탁 목록</div><div class="pn-sub">일반 ${nN}/${RR.maxNormal} · 급한 용무 ${nU}/${RR.maxUrgent}</div>`;
     const contact = Q.canContact(state);
-    html += `<div class="pn-info dim">${contact ? '여기 대피소 무전으로 연락할 수 있어요: 기한 연장(1번, 기한이 1/3 넘게 남았을 때) · 포기 알림.' : '기한 연장·포기 알림은 대피소 무전으로 할 수 있어요 (버스의 통신 공간은 6단계).'}</div>`;
+    html += `<div class="pn-info dim">${contact ? '여기 대피소 무전으로 연락할 수 있어요: 기한 연장(1번, 기한이 1/3 넘게 남았을 때) · 포기 알림.' : '기한 연장·포기 알림은 대피소 무전으로 할 수 있어요.'}</div>`;
     if (!act.length) html += '<div class="pn-info">맡은 부탁이 없어요. 동료나 대피소 사람이 부탁을 꺼내면 여기에 쌓여요.</div>';
     const pname = (r) => LS.ENCOUNTERS[r.enc].who.map((x) => R().name(x)).join('·');
     act.forEach((r) => {
@@ -450,7 +467,7 @@ LS.Panel = (function () {
     }
     html += `<div class="pn-info">${place.scouted ? '정찰 완료: 건물별 보급 가능성을 확인했다.' : '아직 정찰하지 않았다. 건물별 보급 정보가 대략적이다.'}</div>`;
     html += guideCard('work');
-    html += '<div class="pn-info dim">경보 함정을 설치하면 이곳에서 침낭으로 자도 안전해요. 근처 무리 확인은 3단계에서 연결돼요.</div>';
+    html += '<div class="pn-info dim">정찰하면 근처 무리를 확인하고 경보 함정을 설치해요. 그러면 이곳에서 침낭으로 자도 안전해요.</div>';
     html += runningTasks((t) => t.locId === state.locationId && t.type === 'scout_area');
     if (!place.scouted) html += actionBlock('area', 'scout_area', '주변 정찰 (1시간)');
     return html;
@@ -593,7 +610,10 @@ LS.Panel = (function () {
     let html = `<div class="pn-title">${esc(e.who.map((c) => R().name(c)).join('·'))}</div><div class="pn-sub">${esc(LS.People.kindText(e))}</div>`;
     html += '<div class="person-faces">' + e.who.map((c) => `<img src="${LS.ASSETS.portraits[c]}" alt="">`).join('') + '</div>';
     html += guideCard('people');
-    html += `<div class="pn-rows"><div>목적: ${esc(e.purpose)}</div><div>합류 조건: ${esc(e.condition)}</div><div>좌석 ${state.crew.length}/${state.bus.seats}${free < need ? ' · <b class="warn-text">만석</b>' : ` · ${need}자리 필요`}</div></div>`;
+    const js = LS.People.joinSummary(state, id);
+    html += `<div class="pn-rows"><div>목적: ${esc(e.purpose)}</div><div>좌석 ${state.crew.length}/${state.bus.seats}${free < need ? ' · <b class="warn-text">만석</b>' : ` · ${need}자리 필요`}</div></div>`;
+    html += '<div class="act-sub">태우면 바로</div><ul class="person-list perks">' + (js.now.length ? js.now.map((t) => `<li>${esc(t)}</li>`).join('') : '<li>특별한 능력은 없다</li>') + '</ul>';
+    html += '<div class="act-sub">감수할 것</div><ul class="person-list costs">' + js.cost.map((t) => `<li>${esc(t)}</li>`).join('') + '</ul>';
     html += '<div class="act-sub">보이는 것</div><ul class="person-list">' + e.observed.map((t) => `<li>${esc(t)}</li>`).join('') + '</ul>';
     html += '<div class="act-sub">면담·검사로 알게 된 것</div>' + (r.clues.length
       ? '<ul class="person-list clues">' + r.clues.map((t) => `<li>${esc(t)}</li>`).join('') + '</ul>'
@@ -612,7 +632,7 @@ LS.Panel = (function () {
       html += `<div class="act"><div class="act-head"><b>자리 만들기</b><span>${need - free}자리 더 필요</span></div>` +
         `<div class="act-help">${esc(LS.Factions.dropText(LS.Factions.refugeAt(state.locationId) ? 'stay' : 'force'))}</div>` +
         cands.map((m) => `<div class="trade-row"><span>${esc(R().name(m.id))}<small>${esc(LS.CHARACTERS[m.id].role)}</small></span><button class="mini" data-act="drop" data-id="${m.id}" data-back="${id}">내리게 하기</button></div>`).join('') +
-        `<div class="pn-info dim">좌석 복구(6→8석) 설비는 6단계에서 열려요.</div></div>`;
+        '</div>';
     }
     html += runningTasks((t) => t.person === id);
     if (!r.interviewed) html += actionBlock('iv:' + id, 'interview', '면담 (1시간)', { person: id });
@@ -674,6 +694,18 @@ LS.Panel = (function () {
       if (act === 'trade' || act === 'donate' || act === 'news') {
         const id = state.locationId;
         const res = act === 'trade' ? LS.Factions.trade(state, id, b.dataset.id) : act === 'donate' ? LS.Factions.donate(state, id) : LS.Factions.news(state, id);
+        LS.UI.toast(res.error || res.text);
+        LS.UI.renderAll();
+        return;
+      }
+      if (act === 'suppress') {
+        const res = LS.Zombie.useSuppressant(state, b.dataset.id);
+        LS.UI.toast(res.error || res.text);
+        LS.UI.renderAll();
+        return;
+      }
+      if (act === 'apology') {
+        const res = LS.Factions.apologize(state, b.dataset.f, b.dataset.k);
         LS.UI.toast(res.error || res.text);
         LS.UI.renderAll();
         return;

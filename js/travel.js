@@ -398,11 +398,11 @@ LS.Travel = (function () {
     return {
       title: loc.name,
       lines: [
-        { speaker: 'narration', text: `${reg}으로 들어가는 길목이다. 멀리 연기가 오른다.` },
-        { speaker: 'yoon_jaeha', text: '여기서부터는 또 다른 동네야. 준비하고 들어가자.' }
+        { speaker: 'narration', text: `${reg} 쪽으로 이어지는 길이다. 고가도로가 무너져 길을 막았다.` },
+        { speaker: 'yoon_jaeha', text: '여긴 못 지나가. 돌아가자.' }
       ],
-      observations: [`지금 시험판은 여기까지예요. ${reg}은 다음 업데이트에서 열립니다.`],
-      choices: [{ label: '주변을 둘러본다' }]
+      observations: ['길이 무너진 고가도로와 불탄 차들로 막혀 있다. 버스로는 더 갈 수 없다', '온 길로 돌아가 다른 길을 찾아야 한다'],
+      choices: [{ label: '돌아간다' }]
     };
   }
 

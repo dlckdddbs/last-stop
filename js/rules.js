@@ -31,7 +31,21 @@ LS.Rules = (function () {
   function lowHp(m) { return m.hp <= C().lowHpWorkLimit; }
 
   // 감염 단계 (12장): 잠복 0~24시간 · 발열 24~48 (외부 작업 불가, 기력 회복 절반) · 악화 48~72 (모든 작업 불가)
-  function infectionHours(state, m) { return m.infectedAt == null ? null : (state.minute - m.infectedAt) / 60; }
+  // 감염 시계: 억제제로 멈춘 시간(m.pause = { from, to })은 세지 않는다 (12장 '감염 진행 48시간 정지')
+  function infectionMinAt(m, t) {
+    if (m.infectedAt == null) return null;
+    let v = t - m.infectedAt;
+    if (m.pause) v -= Math.max(0, Math.min(t, m.pause.to) - m.pause.from);
+    return v;
+  }
+  // 감염 h시간째가 되는 실제 시각
+  function infectionAt(m, h) {
+    const base = m.infectedAt + h * 60;
+    if (!m.pause) return base;
+    return base >= m.pause.from ? base + (m.pause.to - m.pause.from) : base;
+  }
+  function infectionHours(state, m) { return m.infectedAt == null ? null : infectionMinAt(m, state.minute) / 60; }
+  function infectionLeft(state, m) { return C().infection.turnH * 60 - infectionMinAt(m, state.minute); }
   function infectionStage(state, m) {
     const h = infectionHours(state, m);
     if (h == null) return null;
@@ -153,7 +167,7 @@ LS.Rules = (function () {
 
   return {
     rand, randInt, chance, pick, pickWeighted, clamp, round1,
-    member, char, name, isPoisoned, isFree, lowHp, infectionHours, infectionStage, canHeavy, canOutside, canDrive, driveBlockReason, mentalStage,
+    member, char, name, isPoisoned, isFree, lowHp, infectionHours, infectionStage, infectionAt, infectionLeft, infectionMinAt, canHeavy, canOutside, canDrive, driveBlockReason, mentalStage,
     recoveryRate, speedFactor, applyRest, applyDrain,
     mistakeChance, rollOutcome, hurt, addMental, meaningfulWork, hoursLabel, josa
   };

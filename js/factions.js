@@ -162,6 +162,19 @@ LS.Factions = (function () {
   // 작은 도움: 기부나 일손 돕기로 평판 +1 (참조 A). 대피소마다 하루 한 번 [임시]
   function helpBlock(state, id) { return rstate(state, id).helpDay === today(state) ? '오늘은 이미 도왔다' : ''; }
 
+  // 사과 (19장): 집단당 한 번, 부품 2개 또는 식량 10인분으로 평판 +1
+  function apologized(state, f) { return !!state.flags['apology_' + f]; }
+  function apologize(state, f, kind) {
+    if (!LS.FACTIONS[f]) return { error: '없는 집단이다' };
+    if (apologized(state, f)) return { error: '이미 사과했다' };
+    const cost = kind === 'parts' ? { parts: 2 } : { food: 10 };
+    if (!canPay(state, cost)) return { error: `${costText(cost)}이 모자라다` };
+    pay(state, cost);
+    state.flags['apology_' + f] = true;
+    const t = changeRep(state, f, 1, `${costText(cost)}을 건네며 사과했다`);
+    return { text: `사과했다 · ${t}` };
+  }
+
   function donate(state, id) {
     const rf = refugeAt(id);
     const b = helpBlock(state, id);
@@ -213,6 +226,7 @@ LS.Factions = (function () {
     if (c.family) k.push('family');
     if (c.elder) k.push('elder');
     if (m.hp < FR().sickHp) k.push('sick');
+    if (m.infectedAt != null && !m.infectionHidden) k.push('infected');   // 감염자: 받아 주는 곳(의료 거점)에만 맡길 수 있다
     return k;
   }
 
@@ -268,6 +282,10 @@ LS.Factions = (function () {
       const fs = factionsOf(unit);
       state.crew.filter((m) => !ids.includes(m.id) && m.id !== 'yoon_jaeha' && (fs.includes(LS.CHARACTERS[m.id].faction) || m.id === 'park_seoyun')).forEach((m) => R().addMental(m, -8));
       ids.forEach((x) => { addRecord(state, 'letGo', x, 'force'); addRecord(state, 'betrayals', x, 'force'); state.record.rumors.push({ id: x, how: 'force', minute: state.minute, spread: false }); });
+    }
+    // 이수아의 합류 조건: 물린 동료를 버리면 위반 (안전한 인계는 괜찮다, 22장 ②)
+    if (d.kind !== 'handover' && !ids.includes('lee_sua') && R().member(state, 'lee_sua') && unit.some((m) => m.infectedAt != null && !m.infectionHidden)) {
+      setTimeout(() => LS.Time.handle(LS.People.violation(state, 'lee_sua', `물린 ${josa(who, '을를')} 내리게 했다`)), 0);
     }
     ids.forEach((x) => {
       const m = R().member(state, x);
@@ -533,7 +551,7 @@ LS.Factions = (function () {
   }
 
   return {
-    setup, rep, stance, stanceOf, changeRep, changeTrust, trustStage, price, signed,
+    setup, rep, stance, stanceOf, changeRep, changeTrust, trustStage, price, signed, apologize, apologized,
     helpedCount, addRecord, costText, canPay,
     refugeAt, rstate, entry, lodgeCost, startLodge, lodgeBlock, safeStop, trade, tradeCost, helpBlock, donate, newsCost, news,
     unitOf, dropKind, dropText, dropOff, dropEvent, consents,

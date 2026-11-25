@@ -123,7 +123,7 @@ LS.Tasks = (function () {
     if (busy) return `${josa(R().name(busy.id), '은는')} 다른 일을 하고 있다`;
     if (d.outside && LS.Zombie.siegeActive(state)) return '포위 중에는 밖에 나갈 수 없다';
     const tempM = ms.find((m) => m.temp);
-    if (tempM && !d.isSleep) return `${josa(R().name(tempM.id), '은는')} 임시 동행이라 일을 맡지 않는다`;
+    if (tempM && !d.isSleep) return `${josa(R().name(tempM.id), '은는')} 목적지까지 가는 동행이라 일을 맡지 않는다`;
     const kid = ms.find((m) => LS.CHARACTERS[m.id].child);
     if (kid && (!d.isSleep || opts.clear)) return `${josa(R().name(kid.id), '은는')} 아이라서 일을 맡지 않는다`;
     if (d.person) {

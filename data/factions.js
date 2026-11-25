@@ -113,14 +113,14 @@ LS.FACTION_RULES = {
 Object.assign(LS.REFUGES, {
   dt_clinic: {
     faction: 'medical', name: '도심 진료소', host: 'go_eunyoung', spot: 'dc_clinic',
-    desc: '의료 네트워크가 지키는 진료소. 다친 사람과 환자를 받고, 약과 물자를 바꿔 준다. 치료는 6단계에서 연결.',
+    desc: '의료 네트워크가 지키는 진료소. 다친 사람과 물린 사람을 받아 주고, 약과 물자를 바꿔 준다.',
     lodgeFood: 8,
     trades: [
       { id: 'cl_meds_food', give: { meds: 2 }, want: { food: 8 }, text: '진료소 약품 (환자 식량이 모자란다)' },
       { id: 'cl_meds_parts', give: { meds: 1 }, want: { parts: 2 }, text: '발전기 부품과 바꾼다' }
     ],
     donate: { food: 6 },
-    handover: ['sick', 'child', 'elder'],
+    handover: ['sick', 'child', 'elder', 'infected'],   // 감염자도 받는다 (12장 '수용 가능한 대피소 인계')
     welcome: [
       { speaker: 'go_eunyoung', text: '의료 네트워크의 고은영입니다. 환자가 있으면 데려오세요. 물린 사람은… 사정을 듣고 정해요.' },
       { speaker: 'go_eunyoung', text: '약은 넉넉하지 않지만 바꿀 수는 있어요. 해독제는 아직 구하는 중이에요.' }

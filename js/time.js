@@ -157,7 +157,7 @@ LS.Time = (function () {
     const e = ENDINGS[reason] || ENDINGS.deadline;
     LS.State.addLog(state, e.title, true, 'event', e.text);
     const g = document.getElementById('gameover');
-    g.innerHTML = `<h2>${e.title}</h2><p>${e.text}</p><p>결말 판정은 7단계에서 연결됩니다.</p>` +
+    g.innerHTML = `<h2>${e.title}</h2><p>${e.text}</p>` +
       '<button onclick="location.reload()">처음부터</button>';
     g.classList.remove('hidden');
     LS.UI.renderAll();

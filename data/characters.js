@@ -31,8 +31,8 @@ LS.CHARACTERS = {
     role: '정비원 · 외곽 고물상 주인',
     canDrive: false,
     expert: 'mechanic',
-    traits: ['정비원: 수리하면 내구도 +5 더', '고물·부품에 밝다', '운전 불가 (임시)'],
-    request: '주유소 빚 연료 1 대신 상환 · 5일 (부탁은 5단계)'
+    traits: ['정비원: 수리하면 내구도 +5 더', '고물·부품에 밝다', '운전 불가'],
+    request: '주유소 빚 연료 1 대신 상환 · 5일'
   },
   // ---------- 주거 지역 (5단계, 16장 인물 목록) ----------
   kim_narae: {
@@ -45,7 +45,7 @@ LS.CHARACTERS = {
     condition: 'twoMeals',
     warnLine: '두 끼는 제대로 먹자고 했잖아요. 배고프면 다리가 안 움직여요.',
     leaveLine: '약속이 자꾸 깨지네요. 다음에 서는 곳에서 내릴게요.',
-    request: '동생 집 조사 · 2인 2시간 (부탁은 다음 업데이트)'
+    request: '동생 집 조사 · 2인 2시간'
   },
   jung_minkyung: {
     name: '정민경',
@@ -67,26 +67,26 @@ LS.CHARACTERS = {
     role: '약사 · 의료 · 주거 약국',
     canDrive: false,
     expert: 'pharmacist',
-    traits: ['약사: 약국을 뒤지면 의약품 +1 (임시)', '억제제 재료를 안다 (부탁은 다음 업데이트)'],
-    request: '억제제 재료 확보 · 5일 · 억제제 1 보상 (다음 업데이트)'
+    traits: ['약사: 약국을 뒤지면 의약품 +1', '억제제 재료를 안다'],
+    request: '억제제 재료 확보 · 5일 · 억제제 1 보상'
   },
   // 임시 인물 (2026-11-11, Claude 추가): 임시 동행과 검사(상처 판별)를 익히는 정직한 사람
   lee_junghoon: {
     name: '이정훈',
-    role: '임시 동행 · 약을 구하러 나왔던 아버지 (임시 인물)',
+    role: '약을 구하러 나왔던 아버지',
     canDrive: false,
     traits: ['주거 지역 입구까지만 같이 간다', '주거 지역에 가족이 있다', '팔에 붕대를 감았다']
   },
   // 임시 인물 (2026-11-11, Claude 추가): 22장 '어디까지만 태워주세요'의 도로변 두 사람. 기획서에 이름이 없어 임시로 붙임
   go_mansik: {
     name: '고만식',
-    role: '임시 동행 · 도로변에서 만난 형 (임시 인물)',
+    role: '도로변에서 만난 형',
     canDrive: false,
     traits: ['다음 마을까지 태워 달라고 했다']
   },
   go_mansu: {
     name: '고만수',
-    role: '임시 동행 · 도로변에서 만난 동생 (임시 인물)',
+    role: '도로변에서 만난 동생',
     canDrive: false,
     traits: ['형을 따라다닌다']
   },
@@ -97,10 +97,8 @@ LS.CHARACTERS = {
     canDrive: true,              // 임시값: 기획서에 운전 여부가 없음
     expert: 'medic',
     traits: [
-      '간호사 치료: 의약품 1회분·2시간에 HP +20 (일반 +15) · 치료는 이후 단계',
-      '의무실이 있으면 안정화 환자를 이동 중에도 치료',
-      '일행의 식중독이 빨리 낫는다 (12시간 → 6시간, 치료가 들어오기 전까지 쓰는 임시 능력)',
-      '일반 운전 (임시)'
+      '일행의 식중독이 빨리 낫는다 (12시간 → 6시간)',
+      '운전 가능'
     ],
     joinCondition: '감염자를 버리지 않는다',
     condition: 'noAbandon',
@@ -117,7 +115,7 @@ Object.assign(LS.CHARACTERS, {
     role: '교사 · 주민 · 초등학교 대피소',
     host: true,
     canDrive: false,
-    traits: ['학교에 남아 아이들을 돌본다 (합류하지 않음)', '아이 명단을 공항에 전해 줄 사람을 찾는다 (부탁은 다음 업데이트)']
+    traits: ['학교에 남아 아이들을 돌본다 (합류하지 않음)', '아이 명단을 공항에 전해 줄 사람을 찾는다']
   },
   lim_hyejin: {
     name: '임혜진',
@@ -134,7 +132,7 @@ LS.CHARACTERS.kwon_sunja = {
   role: '보행 불편 노인 · 주민 · 외곽 주택',
   canDrive: false,
   elder: true,
-  traits: ['다리가 불편해 일을 맡지 않는다', '자급 마을까지만 간다 (이송 부탁 2일)']
+  traits: ['다리가 불편해 일을 맡지 않는다', '자급 마을까지만 간다 (2일 안)']
 };
 
 // ---------- 도심 앞부분 (5단계 4차, 16장) ----------
@@ -144,13 +142,13 @@ Object.assign(LS.CHARACTERS, {
     role: '일반 성인 · 무소속 · 도심 정류장',
     canDrive: true,                // [임시] 기획서에 운전 여부가 없음
     hiddenBite: true,              // 팔을 숨김·미열. 합류 24시간 뒤 발열 (17장)
-    traits: ['먼저 태워 달라고 청했다', '팔을 잘 보여 주지 않는다', '운전 가능 (임시)']
+    traits: ['먼저 태워 달라고 청했다', '팔을 잘 보여 주지 않는다', '운전 가능']
   },
   yoo_sangcheol: {
     name: '유상철',
     role: '상인 · 상인 무리 · 도심 교환 거점',
     canDrive: true,                // [임시]
-    traits: ['교환품을 싣고 다닌다 (식량 보관 -10)', '합류 조건: 교환품이 식량 보관 10칸을 쓴다', '운전 가능 (임시)'],
+    traits: ['교환품을 싣고 다닌다 (식량 보관 -10)', '합류 조건: 교환품이 식량 보관 10칸을 쓴다', '운전 가능'],
     joinCondition: '교환품이 식량 보관 10칸을 쓴다',
     condition: 'tradeGoods',
     foodCapUse: 10
@@ -158,7 +156,7 @@ Object.assign(LS.CHARACTERS, {
   // 임시 인물 (Claude 추가): 이수아의 부탁 '환자 1명 의료대피소 이송'의 환자. 기획서에 이름이 없음
   nam_gyuhyun: {
     name: '남규현',
-    role: '다친 주민 · 임시 동행 (임시 인물)',
+    role: '다리를 다친 주민',
     canDrive: false,
     traits: ['다리를 다쳐 걷기 힘들다', '도심 진료소까지만 간다']
   },
@@ -177,6 +175,29 @@ Object.keys(FACTION_OF).forEach((id) => { LS.CHARACTERS[id].faction = FACTION_OF
 // 대피소에 맡길 수 있는 사람의 종류 (REFUGES.handover와 맞춘다)
 LS.CHARACTERS.jung_minkyung.family = 'jung';
 LS.CHARACTERS.jung_hayul.family = 'jung';
+
+// 이번 버전에서 실제로 작동하는 것만 적는다 (2026-11-25, 기말 피드백 3번).
+// perks: 태우면 바로 달라지는 점 · costs: 좌석·식량 말고 감수할 것 (합류 조건 포함)
+// 합류 화면과 동료 패널에 그대로 보인다. 나중에 들어갈 능력은 docs/결정사항.md 13장에 적는다
+const NOW = {
+  yoon_jaeha: { perks: ['장애물 제거가 빠르다 (2시간 → 1시간 30분)', '검사할 때 물린 자국을 알아본다', '운전할 수 있다'], costs: ['주인공: 숨지거나 버스를 떠나면 여정이 끝난다'] },
+  park_seoyun: { perks: ['정찰·파밍·정비를 맡을 수 있다'], costs: ['운전은 못 한다'] },
+  han_jungsu: { perks: ['전문 기사: 운전할 때 기력 소모가 시간당 4 (보통 5)', '본인이 운전하면 이동 시간 -10%'], costs: ['합류 조건: 하루 운전 8시간까지 (넘기면 경고, 두 번이면 내린다)'] },
+  lee_sua: { perks: ['간호: 일행의 식중독이 12시간 → 6시간 만에 낫는다', '운전할 수 있다'], costs: ['합류 조건: 물린 동료를 버리지 않는다 (어기면 경고, 두 번이면 내린다)'] },
+  oh_taeseok: { perks: ['정비원: 버스를 고치면 내구도 +5 더 (+15 → +20)'], costs: ['운전은 못 한다'] },
+  kim_narae: { perks: ['지역 경험자: 경로 정찰 2시간 → 1시간', '운전할 수 있다'], costs: ['합류 조건: 하루 두 끼 정상 배급 (반 배급·거르기면 경고, 두 번이면 내린다)'] },
+  jung_minkyung: { perks: ['정찰·파밍 같은 일을 맡을 수 있다'], costs: ['합류 조건: 하율과 떨어지지 않는다 (둘이 함께 타고 함께 내린다)', '운전은 못 한다'] },
+  jung_hayul: { perks: [], costs: ['아이라서 일을 맡지 않는다'] },
+  seo_dongjin: { perks: ['약사: 약국을 뒤지면 의약품 +1회분'], costs: ['운전은 못 한다'] },
+  bae_jinhyuk: { perks: ['운전할 수 있다'], costs: [] },
+  yoo_sangcheol: { perks: ['운전할 수 있다'], costs: ['합류 조건: 교환품이 식량 보관 10칸을 차지한다 (40 → 30)'] },
+  kwon_sunja: { perks: [], costs: ['다리가 불편해 일을 맡지 않는다', '2일 안에 자급 마을에 데려다 달라고 한다'] },
+  lee_junghoon: { perks: [], costs: ['목적지까지만 가고 일은 맡지 않는다'] },
+  go_mansik: { perks: [], costs: ['목적지까지만 가고 일은 맡지 않는다'] },
+  go_mansu: { perks: [], costs: ['목적지까지만 가고 일은 맡지 않는다'] },
+  nam_gyuhyun: { perks: [], costs: ['다리를 다쳐 일을 맡지 않는다'] }
+};
+Object.keys(NOW).forEach((id) => Object.assign(LS.CHARACTERS[id], NOW[id]));
 
 // 대사창에 나오는 인물이 아닌 화자
 LS.SPEAKERS = {

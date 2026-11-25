@@ -40,7 +40,7 @@ LS.REQUESTS = {
     from: 'seo_dongjin', kind: 'normal', offer: 'join', title: '억제제 재료 확보', days: 5,
     target: ['outskirts_pharmacy', 'res_pharm'], work: { minutes: 120, label: '억제제 재료 찾기' },
     reward: { rep: 2, give: { suppressant: 1 } },
-    rewardText: '억제제 1개 (감염 진행 48시간 정지, 6단계에서 사용) · 의료 네트워크 평판 +2',
+    rewardText: '억제제 1개 (물린 사람의 감염을 48시간 멈춘다) · 의료 네트워크 평판 +2',
     ask: [
       { speaker: 'seo_dongjin', text: '약국 조제실에 남은 시약이 있으면 억제제를 하나 만들 수 있어요.' },
       { speaker: 'seo_dongjin', text: '주거 약국 거리든 외곽 약국이든, 두 사람이 두 시간 찾아 주시면 돼요.' }
@@ -53,7 +53,7 @@ LS.REQUESTS = {
     from: 'song_jiho', kind: 'normal', offer: 'refuge', at: 'res_school', title: '아이 명단 전달', days: null,
     airport: true,
     reward: { rep: 3 },
-    rewardText: '공항 접수대에 명단을 전하면 완료 · 주민 대피소 연합 평판 +3 (공항은 7단계)',
+    rewardText: '공항 접수대에 명단을 전하면 완료 · 주민 대피소 연합 평판 +3',
     ask: [
       { speaker: 'song_jiho', text: '여기 있는 아이들 이름과 보호자 연락처예요. 공항 접수대에 꼭 전해 주세요.' },
       { speaker: 'song_jiho', text: '그래야 수송대가 우리를 찾으러 와요. 버스가 없어서 우리는 갈 수가 없거든요.' }
@@ -95,10 +95,10 @@ Object.assign(LS.REQUESTS, {
   // 17장 유상철: 공항 지역 진입 전 교환 거점 방문 (공항 지역은 7단계)
   yoo_visit: {
     from: 'yoo_sangcheol', kind: 'normal', offer: 'join', title: '공항 앞 교환 거점 방문', days: null,
-    where: '공항 지역에 들어가기 전 교환 거점에 들른다 (7단계)',
+    where: '공항 지역의 공항 앞 교환소에 들른다',
     airport: true,
     reward: { rep: 3 },
-    rewardText: '공항 지역에 들어가기 전 교환 거점에 들르면 완료 · 상인 무리 평판 +3 (공항 지역은 7단계)',
+    rewardText: '공항 앞 교환소에 들르면 완료 · 상인 무리 평판 +3',
     ask: [{ speaker: 'yoo_sangcheol', text: '공항 들어가기 전에 교환 거점에 꼭 한 번 들러야 하오. 넘길 물건이 있어서.' }]
   }
 });
@@ -124,7 +124,7 @@ LS.REQUEST_RULES = {
 LS.MOMENTS = {
   han_check: { who: 'han_jungsu', kept: true, hours: [4, 9], title: '한정수의 새벽 점검', effect: '내구도 +5',
     lines: [{ speaker: 'narration', text: '새벽, 엔진룸 쪽에서 덜그럭 소리가 난다.' }, { speaker: 'han_jungsu', text: '약속 지켜 줘서 고맙소. 그래서 나도 내 몫은 하려고. 벨트 좀 조여 놨소.' }] },
-  narae_alley: { who: 'kim_narae', kept: true, title: '김나래의 뒷길 안내', effect: '지금 있는 곳에서 나가는 길을 모두 확인 (경로 정찰 생략)',
+  narae_alley: { who: 'kim_narae', kept: true, title: '김나래의 뒷길 안내', effect: '그 장소에서 나가는 길을 모두 확인 · 경로 정찰 생략',
     lines: [{ speaker: 'kim_narae', text: '밥 꼬박꼬박 챙겨 줘서 기운이 나네요. 여기서 나가는 길, 제가 다 알아요. 정찰 안 해도 돼요.' }] },
   hayul_drawing: { who: 'jung_hayul', kept: true, keptBy: 'jung_minkyung', title: '하율의 창문 버스 그림', effect: '전원 정신력 +2',
     lines: [{ speaker: 'narration', text: '김 서린 버스 창문에 하율이 손가락으로 그림을 그렸다. 버스와 사람들, 그리고 비행기.' }, { speaker: 'jung_hayul', text: '이게 우리야! 다 같이 비행기 타는 거.' }] },

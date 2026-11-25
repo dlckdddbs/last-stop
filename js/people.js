@@ -30,7 +30,25 @@ LS.People = (function () {
 
   function kindText(e) {
     if (e.kind === 'join') return '동료로 공항까지';
-    return `임시 동행 · ${e.destText}까지`;
+    return `동행 · ${e.destText}까지`;
+  }
+
+  // 태우면 지금 바로 달라지는 점 / 감수할 것 (2026-11-25 기말 피드백 3번: 이번 버전에서 작동하는 것만)
+  function joinSummary(state, id) {
+    const e = enc(id);
+    const now = [];
+    const cost = [`좌석 ${e.who.length}개 · 식량 하루 ${e.who.length * 2}인분`];
+    const many = e.who.length > 1;
+    e.who.forEach((cid) => {
+      const c = LS.CHARACTERS[cid];
+      (c.perks || []).forEach((p) => now.push(many ? `${c.name}: ${p}` : p));
+      (c.costs || []).forEach((p) => cost.push(many ? `${c.name}: ${p}` : p));
+    });
+    const mom = Object.keys(LS.MOMENTS || {}).map((k) => LS.MOMENTS[k]).find((mm) => mm.kept && e.who.includes(mm.keptBy || mm.who));
+    if (mom && e.kind === 'join') now.push(`조건을 5일 지키면: ${mom.title} (${mom.effect})`);
+    if (e.request && LS.REQUESTS[e.request]) now.push(`데려다주면: ${LS.REQUESTS[e.request].rewardText}`);
+    else if (e.kind !== 'join') now.push('목적지까지 데려다주면 ‘도운 사람’으로 기록된다 (결말에 남는다)');
+    return { now, cost };
   }
 
   // ---------- 만남 ----------
@@ -48,12 +66,14 @@ LS.People = (function () {
     const free = seatsFree(state);
     const need = e.who.length;
     const op = e.opinion ? { speaker: voice(state, e.opinion.speaker), text: e.opinion.text } : null;
+    const js = joinSummary(state, id);
     return {
       title: e.title, screen: 'outside',
       lines: e.intro,
       observations: [
         `목적: ${e.purpose}`,
-        `합류 조건: ${e.condition}`,
+        `태우면 바로: ${js.now.length ? js.now.join(' · ') : '특별한 능력은 없다'}`,
+        `감수할 것: ${js.cost.join(' · ')}`,
         `좌석 ${state.crew.length}/${state.bus.seats}${free < need ? ' · 만석이라 태울 수 없다' : ` · ${need}자리 필요`}`
       ].concat(e.observed),
       opinions: op ? [op] : [],
@@ -78,7 +98,7 @@ LS.People = (function () {
     if (e.altTemp) {
       list.push({
         label: `${e.altTemp.destText}까지만 태운다`,
-        desc: free < need ? `좌석이 모자라다 (${need}자리 필요)` : `임시 동행 · 도착하면 맡기고 ${LS.FACTIONS[e.altTemp.faction].name} 평판 +${e.altTemp.rep}`,
+        desc: free < need ? `좌석이 모자라다 (${need}자리 필요)` : `${e.altTemp.destText}까지 동행 · 도착하면 맡기고 ${LS.FACTIONS[e.altTemp.faction].name} 평판 +${e.altTemp.rep}`,
         disabled: free < need,
         run: (s) => accept(s, id, true),
         result: { lines: [{ speaker: e.who[0], text: e.altTemp.acceptLine }] }
@@ -92,7 +112,6 @@ LS.People = (function () {
         run: () => setTimeout(() => LS.Panel.open('person', id), 0),
         result: { lines: [{ speaker: 'narration', text: '버스 안을 둘러본다. 누군가는 내려야 한다.' }] }
       });
-      if (need > 1) list.push({ label: '좌석을 복구한다', desc: '좌석 복구 설비(부품 3·4시간)는 6단계에서 열려요', disabled: true });
     }
     // 리더 약속 (20장): 자리가 없을 때 데리러 오겠다고 약속한다. 기본 5일
     if (free < need && e.kind === 'join') {
@@ -133,7 +152,7 @@ LS.People = (function () {
     const r = rec(state, id);
     const temp = alt ? e.altTemp : (e.kind !== 'join' ? { dest: e.dest, destText: e.destText } : null);
     e.who.forEach((cid) => {
-      if (!LS.State.addMember(state, cid, temp ? `임시 동행 · ${temp.destText}까지` : LS.CHARACTERS[cid].role)) return;
+      if (!LS.State.addMember(state, cid, temp ? `동행 · ${temp.destText}까지` : LS.CHARACTERS[cid].role)) return;
       const m = R().member(state, cid);
       if (temp) m.temp = { enc: id, dest: temp.dest, from: state.locationId, thief: e.kind === 'thief', rep: alt ? { faction: e.altTemp.faction, amount: e.altTemp.rep } : null };
       if (LS.CHARACTERS[cid].hiddenBite) { m.infectedAt = state.minute; m.infectionHidden = true; }   // 숨긴 물림: 24시간 뒤 발열 (17장)
@@ -245,7 +264,7 @@ LS.People = (function () {
           const ids = ms.map((m) => m.id);
           ms.forEach((m) => LS.State.killMember(s, m.id, 'left'));
           rec(s, eid).status = 'arrived';
-          LS.State.addLog(s, `${josa(whoNames(e), '이가')} 내렸다`, false, 'event', `임시 동행 · ${LS.State.location(s).name}`);
+          LS.State.addLog(s, `${josa(whoNames(e), '이가')} 내렸다`, false, 'event', `동행 · ${LS.State.location(s).name}`);
           if (!thieves) ids.forEach((x) => LS.Factions.addRecord(s, 'helped', x, 'delivered'));
           if (rp) LS.Factions.changeRep(s, rp.faction, rp.amount, `${josa(whoNames(e), '을를')} ${LS.State.location(s).name}까지 데려다줬다`);
           const tid = e.fulfills || e.request;   // 이송 부탁 완료 (권순자·이수아의 환자)
@@ -288,7 +307,7 @@ LS.People = (function () {
     return {
       title: `${nm(m.id)}의 하차`, screen: 'outside',
       lines: [{ speaker: m.id, text: '약속한 대로 여기서 내리겠소.' }, { speaker: 'narration', text: `${josa(nm(m.id), '은는')} 짐을 챙겨 버스에서 내렸다.` }],
-      observations: ['합류 조건을 두 번 어겼다', '붙잡는 설득은 6단계(리더 신뢰)에서 연결'],
+      observations: ['합류 조건을 두 번 어겼다'],
       choices: [{
         label: '보내 준다',
         run: (s) => {
@@ -342,7 +361,7 @@ LS.People = (function () {
         ].concat(sua ? [{ speaker: 'lee_sua', text: '물렸다고 길에 버리면 안 돼요. 끝까지 같이 가요.' }] : []),
         observations: [
           '감염 확정 · 지금 발열 단계: 외부 작업 불가, 기력 회복 절반',
-          `48시간부터 악화, 66시간에 결정 (해독제·억제제·대피소 인계는 6단계)`,
+          '48시간부터 악화, 66시간에 결정 (억제제가 있으면 48시간을 벌 수 있다)',
           sua ? '이수아의 합류 조건: 감염자를 버리지 않는다' : '하차시키면 위험한 강제 하차가 된다'
         ],
         choices: [{ label: '…알았다' }]
@@ -460,6 +479,6 @@ LS.People = (function () {
 
   return {
     present, meet, decide, decisionChoices, reveal, talkBlock, onStop, onDepart, advance, beginStep,
-    violation, onDrive, drivenToday, kindText, seatsFree, rec
+    violation, onDrive, drivenToday, kindText, seatsFree, rec, joinSummary
   };
 })();

@@ -195,7 +195,7 @@ LS.Zombie = (function () {
     if (m.infectedAt != null) return;
     const I = C().infection;
     m.infectedAt = state.minute;
-    LS.State.addLog(state, `${josa(R().name(m.id), '이가')} 물렸다`, true, 'body', `감염 확정 · ${I.feverH}시간 뒤 발열, ${I.worseH}시간 뒤 악화, ${I.turnH}시간에 전환 (해독제는 이후 단계)`);
+    LS.State.addLog(state, `${josa(R().name(m.id), '이가')} 물렸다`, true, 'body', `감염 확정 · ${I.feverH}시간 뒤 발열, ${I.worseH}시간 뒤 악화, ${I.turnH}시간에 전환`);
   }
 
   // ---------- 떠나기 ----------
@@ -449,7 +449,6 @@ LS.Zombie = (function () {
         },
         result: { lines: [{ speaker: 'narration', text: '운전석에 앉는다. 어느 쪽으로 밀고 나갈지 정해야 한다.' }] }
       },
-      { label: '무전으로 구조를 요청한다', desc: '가까운 집단과의 연락은 이후 단계 (5단계)', disabled: true }
     ];
   }
 
@@ -514,19 +513,34 @@ LS.Zombie = (function () {
         { speaker: hero ? 'park_seoyun' : m.id, text: hero ? '재하 씨… 정해야 해요.' : '…저 아직 괜찮아요. 아직은요.' }
       ],
       observations: [
-        '해독제가 있으면 완치 (해독제는 이후 단계에서 구할 수 있어요)',
+        `억제제 ${state.resources.suppressant}개 · 해독제 ${state.resources.antidote}개`,
         '격리 좌석: 좌석 하나를 쓰며 끝까지 함께 간다. 전환 때 다치는 사람 없이 작별한다',
-        hero ? '스스로 내리면 남은 일행이 이어서 간다 (결말 판정은 7단계)' : '여기서 내려놓으면 함께한 사람들의 마음이 흔들린다',
-        sua && !hero ? '이수아와 감염자를 버리지 않기로 약속했다 (합류 조건, 4단계에서 적용)' : ''
+        hero ? '스스로 내리면 남은 일행이 이어서 간다' : '여기서 내려놓으면 함께한 사람들의 마음이 흔들린다',
+        sua && !hero ? '이수아와 물린 동료를 버리지 않기로 약속했다 (합류 조건)' : ''
       ].filter(Boolean),
       choices: [
-        { label: '해독제를 쓴다', desc: '해독제가 없다 (이후 단계)', disabled: true },
+        state.resources.antidote > 0 ? {
+          label: '해독제를 쓴다',
+          desc: '완치',
+          run: (s) => { const mm = R().member(s, m.id); if (!mm) return; s.resources.antidote--; mm.infectedAt = null; mm.isolated = false; LS.State.addLog(s, `${nm}: 해독제로 완치`, true, 'body', '감염이 사라졌다'); },
+          result: { lines: [{ speaker: 'narration', text: `열이 내린다. ${josa(nm, '이가')} 눈을 떴다.` }] }
+        } : null,
+        state.resources.suppressant > 0 && !m.suppressed ? {
+          label: '억제제를 쓴다',
+          desc: '감염 진행을 48시간 멈춘다 (한 사람에게 한 번)',
+          run: (s) => useSuppressant(s, m.id),
+          result: { lines: [{ speaker: 'narration', text: '주사를 놓자 떨림이 잦아든다. 시간을 조금 벌었다.' }] }
+        } : null,
         {
           label: '격리 좌석으로 끝까지 함께 간다',
           run: (s) => { const mm = R().member(s, m.id); if (mm) mm.isolated = true; LS.State.addLog(s, `${nm}: 격리 좌석`, true, 'body', '끝까지 함께 간다'); },
           result: { lines: [{ speaker: 'narration', text: '뒤쪽 좌석 하나를 비워 담요를 깔았다.' }] }
         },
-        { label: '대피소에 맡긴다', desc: '대피소·집단은 이후 단계', disabled: true },
+        !hero && LS.Factions.dropKind(state, m.id).kind === 'handover' ? {
+          label: '이곳 진료소에 맡긴다',
+          desc: '의료 거점이 받아 준다 · 안전한 인계 (평판 +1, 도운 사람)',
+          resolve: (s) => { const r = LS.Factions.dropOff(s, m.id); return { lines: [{ speaker: 'narration', text: `${josa(r.who, '을를')} 진료소에 맡겼다.` }] }; }
+        } : null,
         hero ? {
           label: '스스로 내린다',
           run: () => setTimeout(() => LS.Time.handle([{ gameover: 'selfExit' }]), 0),
@@ -537,12 +551,26 @@ LS.Zombie = (function () {
             LS.State.killMember(s, m.id, 'left');
             if (sua) setTimeout(() => LS.Time.handle(LS.People.violation(s, 'lee_sua', `감염된 ${josa(nm, '을를')} 내려놓았다`)), 0);   // 이수아 합류 조건
             s.crew.forEach((o) => R().addMental(o, -3));   // 임시값: 위험 하차 충격 (기획서 -3~-8)
-            LS.State.addLog(s, `${josa(nm, '을를')} 내려놓았다`, true, 'event', `감염 66시간 · 모두 정신력 -3${sua ? ' · 이수아와의 약속을 어겼다 (4단계에서 적용)' : ''}`);
+            LS.State.addLog(s, `${josa(nm, '을를')} 내려놓았다`, true, 'event', `감염 66시간 · 모두 정신력 -3${sua ? ' · 이수아와의 약속을 어겼다' : ''}`);
           },
           result: { lines: [{ speaker: 'narration', text: `${josa(nm, '은는')} 고개를 끄덕였다. 문이 닫힌다.` }] }
         }
-      ]
+      ].filter(Boolean)
     };
+  }
+
+  // 억제제 (12장): 감염 진행 48시간 정지, 한 사람에게 한 번. 감염 시계를 48시간 뒤로 민다
+  function useSuppressant(state, id) {
+    const m = R().member(state, id);
+    if (!m || m.infectedAt == null || m.infectionHidden) return { error: '감염된 사람이 아니다' };
+    if (m.suppressed) return { error: '이미 억제제를 썼다 (한 사람에게 한 번)' };
+    if (state.resources.suppressant <= 0) return { error: '억제제가 없다' };
+    state.resources.suppressant--;
+    m.suppressed = true;
+    m.pause = { from: state.minute, to: state.minute + 48 * 60 };   // 감염 시계를 48시간 멈춘다
+    const left = R().infectionLeft(state, m);
+    LS.State.addLog(state, `${R().name(m.id)}: 억제제`, true, 'body', `감염 진행 48시간 정지 · 전환까지 ${H(left)}`);
+    return { text: `${R().name(m.id)}에게 억제제를 썼다 · 전환까지 ${H(left)}` };
   }
 
   function turn(state, m, out) {
@@ -566,7 +594,7 @@ LS.Zombie = (function () {
     const I = C().infection;
     state.crew.slice().forEach((m) => {
       if (m.infectedAt == null) return;
-      const at = (h) => m.infectedAt + h * 60;
+      const at = (h) => R().infectionAt(m, h);   // 억제제로 멈춘 시간만큼 뒤로 밀린다
       const nm = R().name(m.id);
       if (prev < at(I.feverH) && next >= at(I.feverH)) {
         const t = taskOf(state, m);
@@ -632,7 +660,7 @@ LS.Zombie = (function () {
     const I = C().infection;
     state.crew.forEach((mm) => {
       if (mm.infectedAt == null) return;
-      [I.feverH, I.worseH, I.decideH, I.turnH].forEach((hh) => c.push(mm.infectedAt + hh * 60));
+      [I.feverH, I.worseH, I.decideH, I.turnH].forEach((hh) => c.push(R().infectionAt(mm, hh)));
     });
     const f = c.filter((t) => t > m);
     return f.length ? Math.min(...f) - m : Infinity;
@@ -697,6 +725,6 @@ LS.Zombie = (function () {
 
   return {
     beginStop, onDepart, advance, nextMilestone, nextKnown, status, onEngine, siegeActive, siegeChoices, onScouted,
-    exposeRoll, infect, spawnChance, leaveBlock, sizeOf, clearRoll, clearRisk, clearRiskText, forceHorde
+    exposeRoll, infect, spawnChance, leaveBlock, sizeOf, clearRoll, clearRisk, clearRiskText, forceHorde, useSuppressant
   };
 })();
