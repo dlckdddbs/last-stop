@@ -134,6 +134,9 @@ LS.Ending = (function () {
     try { const s = seenEndings(); if (!s.includes(id)) { s.push(id); localStorage.setItem(SEEN_KEY, JSON.stringify(s)); } } catch (e) { /* 저장소 없음 */ }
   }
 
+  function speakerName(id) { return LS.CHARACTERS[id] ? nm(id) : (LS.SPEAKERS[id] ? LS.SPEAKERS[id].name : ''); }
+  function reactionsSafe(state, j) { try { return reactions(state, j); } catch (e) { return []; } }
+
   // ---------- 여행 기록 화면 ----------
   function chip(id, sub) {
     const src = LS.ASSETS.portraits[id];
@@ -153,12 +156,12 @@ LS.Ending = (function () {
     LS.State.addLog(state, `결말: ${e.title}`, true, 'event', e.scene);
     const axisText = { saved: '구한 쪽', between: '그 사이', letgo: '내려놓은 쪽' }[f.axis];
     const arrivedAt = state.flags.arrivedAirport != null ? LS.Clock.fullLabel(state.flags.arrivedAirport) : null;
-    const reactions = LS.Ending.reactions ? LS.Ending.reactions(state, j) : [];
+    const reactions = reactionsSafe(state, j);
     const extras = extraScenes(state, j);
 
     let html = `<div class="ending-box"><div class="ending-kind ${e.kind}">${e.kind === 'success' ? '공항 도착' : e.kind === 'fail' ? '대피편을 놓쳤다' : '특수 결말'}</div>`;
     html += `<h2>${esc(e.title)}</h2><p class="ending-scene">${esc(e.scene)}</p>`;
-    if (reactions.length) html += '<div class="ending-react">' + reactions.map((r) => `<p>${r.speaker ? `<b>${esc(nm(r.speaker))}</b> ` : ''}${esc(r.text)}</p>`).join('') + '</div>';
+    if (reactions.length) html += '<div class="ending-react">' + reactions.map((r) => `<p>${r.speaker ? `<b>${esc(speakerName(r.speaker))}</b> ` : ''}${esc(r.text)}</p>`).join('') + '</div>';
     if (extras.length) html += '<div class="ending-extra">' + extras.map((t) => `<p>${esc(t)}</p>`).join('') + '</div>';
 
     // 판정 근거
@@ -195,5 +198,65 @@ LS.Ending = (function () {
     return html;
   }
 
-  return { arrivalEvent, judge, show, facts, ENDINGS, seenEndings };
+  // ---------- 공항의 반응 (25장 인물 후일담 + 기말 심화: 태운 사람·지킨 약속에 따라 달라지는 문장) ----------
+  // 여정 중의 선택을 마지막 장면에서 다시 떠올리게 한다: 처음 태운 사람, 지킨/어긴 약속, 내려놓은 사람
+  function reqDone(state, tid) { return state.requests.list.some((r) => r.tid === tid && r.status === 'done'); }
+  function reqStatus(state, tid) { const r = state.requests.list.find((x) => x.tid === tid); return r ? r.status : null; }
+  function aboard(state, id) { return !!R().member(state, id); }
+
+  function reactions(state, j) {
+    const out = [];
+    const arrived = j.id && ENDINGS[j.id].kind === 'success';
+    const boarded = state.record.boarded || [];
+    // 처음 태운 사람 (첫 정류장의 선택)
+    const first = boarded[0];
+    if (arrived && first && aboard(state, first.id)) {
+      out.push({ speaker: null, text: `${placeName(first.where)}에서 처음 태운 ${josa(nm(first.id), '이가')} 맨 먼저 접수 명단에 이름을 적었다.` });
+    }
+    if (arrived) {
+      // 25장 예: 한정수 — 조건을 지켰다면 마지막 구간 운전을 자원
+      const han = R().member(state, 'han_jungsu');
+      if (han && !han.violations) out.push({ speaker: 'han_jungsu', text: '약속 지켜 줘서 고맙소. 접수대 앞 마지막 길은 내가 몰았지.' });
+      // 25장 예: 김나래 — 조사한 동생 집의 쪽지를 들고 접수대에 섬
+      if (aboard(state, 'kim_narae')) {
+        out.push(reqDone(state, 'narae_brother')
+          ? { speaker: 'kim_narae', text: '(동생 집에서 찾은 쪽지를 내밀며) 이 이름도 같이 찾아 주세요. 먼저 왔을 거예요.' }
+          : { speaker: 'kim_narae', text: '동생 집에는 끝내 못 가 봤네요. …여기 어딘가 있겠죠.' });
+      }
+      // 25장 예: 송지호 — 명단 전달 후 학교 대피소 수송대 출발 방송
+      if (reqDone(state, 'song_list')) out.push({ speaker: 'radio', text: '초등학교 대피소에 수송대를 보냅니다. 명단을 전해 준 버스에 감사드립니다.' });
+      // 이수아 — 물린 동료를 끝까지 데려왔으면 의료 인계 (12장 "전환 전 공항 도착은 의료 인계")
+      const infected = state.crew.filter((m) => m.infectedAt != null);
+      if (infected.length) {
+        const who = infected.map((m) => nm(m.id)).join('·');
+        out.push(aboard(state, 'lee_sua')
+          ? { speaker: 'lee_sua', text: `${josa(who, '을를')} 의료진에게 넘겼어요. 끝까지 데려왔으니까, 약속은 지킨 거예요.` }
+          : { speaker: null, text: `격리 좌석의 ${josa(who, '은는')} 공항 의료진에게 인계됐다.` });
+      }
+      const sua = R().member(state, 'lee_sua');
+      if (sua && sua.violations) out.push({ speaker: 'lee_sua', text: '…길에 두고 온 사람이 생각나요.' });
+      // 정민경·하율
+      if (aboard(state, 'jung_hayul')) out.push({ speaker: 'jung_hayul', text: '(접수대 직원에게 그림을 보여 준다) 이게 우리 버스예요!' });
+      // 오태석·유상철·서동진의 부탁
+      if (aboard(state, 'oh_taeseok') && reqDone(state, 'oh_debt')) out.push({ speaker: 'oh_taeseok', text: '빚 털고 오니 발이 가볍소.' });
+      if (aboard(state, 'yoo_sangcheol') && reqDone(state, 'yoo_visit')) out.push({ speaker: 'yoo_sangcheol', text: '교환품은 다 넘겼소. 빈 손수레로 비행기 타는 상인은 나 하나일 거요.' });
+      if (aboard(state, 'seo_dongjin') && reqDone(state, 'seo_material')) out.push({ speaker: 'seo_dongjin', text: '억제제 만드는 법을 의료진에게 적어 줬어요. 누군가는 시간을 벌겠죠.' });
+    }
+    // 맡기거나 데려다준 사람의 소식 (25장 예: 권순자 — 버스가 데려다준 할머니로 마을에서 불림)
+    if (reqDone(state, 'kwon_ride')) out.push({ speaker: null, text: '자급 마을에서는 권순자 할머니를 “버스가 데려다준 할머니”라고 부른다.' });
+    const school = (state.record.helped || []).find((h) => h.where === 'res_school');
+    if (school && LS.CHARACTERS[school.id]) out.push({ speaker: null, text: `초등학교 대피소의 벽에는 ${josa(nm(school.id), '이가')} 그린 버스 그림이 붙어 있다.` });
+    // 리더 약속: 지켰으면 고마움, 어겼으면 빈자리
+    state.requests.list.filter((r) => r.kind === 'promise').forEach((r) => {
+      const names = LS.ENCOUNTERS[r.enc].who.map(nm).join('·');
+      if (r.status === 'done' && arrived) out.push({ speaker: LS.ENCOUNTERS[r.enc].who[0], text: '데리러 와 줘서… 그 말, 믿길 잘했어요.' });
+      if (r.status === 'broken' || r.status === 'active') out.push({ speaker: null, text: `데리러 가겠다고 했던 ${names}의 자리는 끝내 비어 있었다.` });
+    });
+    // 내려놓은 사람 (가장 마지막으로 내려놓은 한 명)
+    const lastLetGo = (state.record.letGo || []).slice(-1)[0];
+    if (lastLetGo && LS.CHARACTERS[lastLetGo.id]) out.push({ speaker: null, text: `${placeName(lastLetGo.where)}에 내려놓은 ${nm(lastLetGo.id)}의 좌석은 아무도 앉지 않았다.` });
+    return out.slice(0, 7);
+  }
+
+  return { arrivalEvent, judge, show, facts, ENDINGS, seenEndings, reactions };
 })();
